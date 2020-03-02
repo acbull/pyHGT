@@ -9,9 +9,11 @@ The most important files in this projects are as follow:
 - conv.py: The core of our model, implements the transformer-like heterogeneous graph convolutional layer.
 - model.py: The wrap of different model components.
 - data.py: The data interface and usage.
-  - `class Graph()`: The data structure of heterogeneous graph. Stores feature in ``Graph.node_feature`` as pandas.DataFrame; Stores adjacency matrix in ``Graph.edge_list`` as dictionay.
+  - `class Graph`: The data structure of heterogeneous graph. Stores feature in ``Graph.node_feature`` as pandas.DataFrame; Stores adjacency matrix in ``Graph.edge_list`` as dictionay.
   - `def sample_subgraph`: The sampling algorithm for heterogeneous graph. Each iteration samples a fixed number of nodes per type. All the sampled nodes are within the region of already sampled nodes, with sampling probability as the square of relative degree.
 - train_*.py: The training and validation script for a specific downstream task.
+  - `def *_sample`: The sampling function for a given task. Remember to mask out existing link within the graph to avoid information leakage.
+  - `def prepare_data`: Conduct sampling in parallel with multiple processes, which can seamlessly coordinate with model training.
   
 ## Setup
 
