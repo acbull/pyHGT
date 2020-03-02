@@ -34,7 +34,7 @@ parser.add_argument('--n_heads', type=int, default=8,
                     help='Number of attention head')
 parser.add_argument('--n_layers', type=int, default=4,
                     help='Number of GNN layers')
-parser.add_argument('--dropout', type=int, default=0.2,
+parser.add_argument('--dropout', type=int, default=0.25,
                     help='Dropout ratio')
 parser.add_argument('--sample_depth', type=int, default=6,
                     help='How many numbers to sample the graph')
@@ -343,6 +343,7 @@ for epoch in np.arange(args.n_epoch) + 1:
             valid_res += [r.cpu().detach().tolist()]
             ser += s
         valid_ndcg = np.average([ndcg_at_k(resi, len(resi)) for resi in valid_res])
+        valid_mrr  = mean_reciprocal_rank(valid_res)
         
         if valid_ndcg > best_val:
             best_val = valid_ndcg
@@ -350,9 +351,9 @@ for epoch in np.arange(args.n_epoch) + 1:
             print('UPDATE!!!')
         
         st = time.time()
-        print(("Epoch: %d (%.1fs)  LR: %.5f Train Loss: %.2f  Valid Loss: %.2f  Valid NDCG: %.4f") % \
+        print(("Epoch: %d (%.1fs)  LR: %.5f Train Loss: %.2f  Valid Loss: %.2f  Valid NDCG: %.4f  Valid MRR: %.4f") % \
               (epoch, (st-et), optimizer.param_groups[0]['lr'], np.average(train_losses), \
-                    loss.cpu().detach().tolist(), valid_ndcg))
+                    loss.cpu().detach().tolist(), valid_ndcg, valid_mrr))
         stats += [[np.average(train_losses), loss.cpu().detach().tolist()]]
         del res, loss
     del train_data, valid_data
