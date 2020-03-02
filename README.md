@@ -25,7 +25,7 @@ This implementation is based on pytorch_geometric. To run the code, you need the
 - [sklearn](https://github.com/scikit-learn/scikit-learn)
 - [tqdm](https://github.com/tqdm/tqdm)
 
-Our current experiments are conducted on Open Academic Graph (OAG). For easiness of usage, we split the whole dataset into different granularity: all CS papers, all AI papers, all NN papers.
+Our current experiments are conducted on Open Academic Graph (OAG). For easiness of usage, we split the whole dataset into different granularity: all CS papers (8.1G), all ML papers (1.9G), all NN papers (0.6G).
 
 For raw data, you can download via (https://drive.google.com/open?id=1Np4J0q_ZIYr74IIdLGlAgzwwx00KJJeE). After downloading it, run preprocess_OAG.py to extract features and store them in our data structure.
 
