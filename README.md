@@ -29,7 +29,7 @@ We provide the raw data of all CS papers in OAG, you can download via (https://d
 
 Also, we provide the preprocess version of OAG graph, you can download via ().
 
-You can also use our code to process other heteogeneous graph, as long as you process them into our data structure in data.py.
+You can also use our code to process other heteogeneous graph, as long as you process them into our data structure `class Graph` in data.py.
 
 ## Usage
 Execute the following scripts to train on paper-field(L2) classification task using HGT:
