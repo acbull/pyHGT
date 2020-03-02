@@ -16,7 +16,7 @@ parser.add_argument('--data_dir', type=str, default='./dataset/oag_output',
                     help='The address of preprocessed graph.')
 parser.add_argument('--model_dir', type=str, default='./model_save',
                     help='The address for storing the models and optimization results.')
-parser.add_argument('--model_name', type=str, default='PV_hgt',
+parser.add_argument('--task_name', type=str, default='PV',
                     help='The name of the stored models and optimization results.')
 parser.add_argument('--cuda', type=int, default=0,
                     help='Avaiable GPU ID')
@@ -32,9 +32,9 @@ parser.add_argument('--n_hid', type=int, default=400,
                     help='Number of hidden dimension')
 parser.add_argument('--n_heads', type=int, default=8,
                     help='Number of attention head')
-parser.add_argument('--n_layers', type=int, default=3,
+parser.add_argument('--n_layers', type=int, default=4,
                     help='Number of GNN layers')
-parser.add_argument('--dropout', type=int, default=0.5,
+parser.add_argument('--dropout', type=int, default=0.2,
                     help='Dropout ratio')
 parser.add_argument('--sample_depth', type=int, default=6,
                     help='How many numbers to sample the graph')
@@ -49,12 +49,14 @@ parser.add_argument('--optimizer', type=str, default='adamw',
                     help='optimizer to use.')
 parser.add_argument('--data_percentage', type=int, default=1.0,
                     help='Percentage of training and validation data to use')
-parser.add_argument('--n_epoch', type=int, default=100,
+parser.add_argument('--n_epoch', type=int, default=200,
                     help='Number of epoch to run')
 parser.add_argument('--n_pool', type=int, default=4,
                     help='Number of process to sample subgraph')    
 parser.add_argument('--n_batch', type=int, default=32,
                     help='Number of batch (sampled graphs) for each epoch')   
+parser.add_argument('--repeat', type=int, default=2,
+                    help='How many time to train over a singe batch (reuse data)') 
 parser.add_argument('--batch_size', type=int, default=256,
                     help='Number of output nodes for training')    
 parser.add_argument('--clip', type=int, default=0.2,
@@ -91,25 +93,20 @@ def node_classification_sample(seed, pairs, time_range, batch_size):
     '''
     np.random.seed(seed)
     target_ids = np.random.choice(list(pairs.keys()), batch_size, replace = False)
-    source_dict = {}
     target_info = []
-    source_info  = []
     '''
         (2) Get all the source_nodes (Journal) associated with these output nodes.
             Collect their information and time as seed nodes for sampling sub-graph.
     '''
     for target_id in target_ids:
-        source_id, _time = pairs[target_id]
-        if source_id not in source_dict:
-            source_dict[source_id] = True
-            source_info += [[source_id, _time]]
+        _, _time = pairs[target_id]
         target_info += [[target_id, _time]]
 
     '''
         (3) Based on the seed nodes, sample a subgraph with 'sampled_depth' and 'sampled_number'
     '''
     feature, times, edge_list, _, _ = sample_subgraph(graph, time_range, \
-                inp = {'paper': np.array(target_info), 'venue': np.array(source_info)}, \
+                inp = {'paper': np.array(target_info)}, \
                 sampled_depth = args.sample_depth, sampled_number = args.sample_width)
 
 
@@ -206,12 +203,12 @@ elif args.optimizer == 'sgd':
 elif args.optimizer == 'adagrad':
     optimizer = torch.optim.Adagrad(model.parameters())
 
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 500, eta_min=1e-6)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 1000, eta_min=1e-6)
 
 stats = []
 res = []
 best_val   = 0
-train_step = 800
+train_step = 1500
 
 pool = mp.Pool(args.n_pool)
 st = time.time()
@@ -239,25 +236,26 @@ for epoch in np.arange(args.n_epoch) + 1:
     model.train()
     train_losses = []
     torch.cuda.empty_cache()
-    for node_feature, node_type, edge_time, edge_index, edge_type, x_ids, ylabel in train_data:
-        node_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
-                               edge_time.to(device), edge_index.to(device), edge_type.to(device))
-        res  = classifier.forward(node_rep[x_ids])
-        loss = criterion(res, ylabel.to(device))
-        
-        optimizer.zero_grad() 
-        torch.cuda.empty_cache()
-        loss.backward()
+    for _ in range(args.repeat):
+        for node_feature, node_type, edge_time, edge_index, edge_type, x_ids, ylabel in train_data:
+            node_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
+                                   edge_time.to(device), edge_index.to(device), edge_type.to(device))
+            res  = classifier.forward(node_rep[x_ids])
+            loss = criterion(res, ylabel.to(device))
 
-        torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
-        optimizer.step()
-        
-        train_losses += [loss.cpu().detach().tolist()]
-        train_step += 1
-        scheduler.step(train_step)
-        del res, loss
+            optimizer.zero_grad() 
+            torch.cuda.empty_cache()
+            loss.backward()
+
+            torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
+            optimizer.step()
+
+            train_losses += [loss.cpu().detach().tolist()]
+            train_step += 1
+            scheduler.step(train_step)
+            del res, loss
     '''
-        Valid (2015 <= time < 2017)
+        Valid (2015 <= time <= 2016)
     '''
     model.eval()
     with torch.no_grad():
@@ -277,7 +275,7 @@ for epoch in np.arange(args.n_epoch) + 1:
         
         if valid_ndcg > best_val:
             best_val = valid_ndcg
-            torch.save(model, os.path.join(args.model_dir, args.model_name))
+            torch.save(model, os.path.join(args.model_dir, args.task_name + '_' + args.conv_name))
             print('UPDATE!!!')
         
         st = time.time()
@@ -290,10 +288,26 @@ for epoch in np.arange(args.n_epoch) + 1:
 
 
 '''
-    Evaluate the trained model via test set (time >= 2017)
+    Evaluate the trained model via test set (time > 2016)
 '''
 
-best_model = torch.load(os.path.join(args.model_dir, args.model_name))
+with torch.no_grad():
+    test_res = []
+    for _ in range(10):
+        node_feature, node_type, edge_time, edge_index, edge_type, x_ids, ylabel = \
+                    node_classification_sample(randint(), test_pairs, test_range, args.batch_size)
+        paper_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
+                    edge_time.to(device), edge_index.to(device), edge_type.to(device))[x_ids]
+        res = classifier.forward(paper_rep)
+        for ai, bi in zip(ylabel, res.argsort(descending = True)):
+            test_res += [(bi == ai).int().tolist()]
+    test_ndcg = [ndcg_at_k(resi, len(resi)) for resi in test_res]
+    print('Last Test NDCG: %.4f' % np.average(test_ndcg))
+    test_mrr = mean_reciprocal_rank(test_res)
+    print('Last Test MRR:  %.4f' % np.average(test_mrr))
+
+
+best_model = torch.load(os.path.join(args.model_dir, args.task_name + '_' + args.conv_name))
 best_model.eval()
 gnn, classifier = best_model
 with torch.no_grad():
@@ -307,6 +321,6 @@ with torch.no_grad():
         for ai, bi in zip(ylabel, res.argsort(descending = True)):
             test_res += [(bi == ai).int().tolist()]
     test_ndcg = [ndcg_at_k(resi, len(resi)) for resi in test_res]
-    print('Test NDCG: %.4f' % np.average(test_ndcg))
+    print('Best Test NDCG: %.4f' % np.average(test_ndcg))
     test_mrr = mean_reciprocal_rank(test_res)
-    print('Test MRR:  %.4f' % np.average(test_mrr))
+    print('Best Test MRR:  %.4f' % np.average(test_mrr))

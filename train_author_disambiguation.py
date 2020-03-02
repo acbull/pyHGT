@@ -16,7 +16,7 @@ parser.add_argument('--data_dir', type=str, default='./dataset/oag_output',
                     help='The address of preprocessed graph.')
 parser.add_argument('--model_dir', type=str, default='./model_save',
                     help='The address for storing the models and optimization results.')
-parser.add_argument('--model_name', type=str, default='AD_hgt',
+parser.add_argument('--task_name', type=str, default='AD',
                     help='The name of the stored models and optimization results.')
 parser.add_argument('--cuda', type=int, default=0,
                     help='Avaiable GPU ID')
@@ -32,14 +32,14 @@ parser.add_argument('--n_hid', type=int, default=400,
                     help='Number of hidden dimension')
 parser.add_argument('--n_heads', type=int, default=8,
                     help='Number of attention head')
-parser.add_argument('--n_layers', type=int, default=3,
+parser.add_argument('--n_layers', type=int, default=4,
                     help='Number of GNN layers')
-parser.add_argument('--dropout', type=int, default=0.5,
+parser.add_argument('--dropout', type=int, default=0.2,
                     help='Dropout ratio')
 parser.add_argument('--sample_depth', type=int, default=6,
                     help='How many numbers to sample the graph')
 parser.add_argument('--sample_width', type=int, default=128,
-                    help='How many nodes to be sampled per layer per type')
+                    help='How many `nodes to be sampled per layer per type')
 
 '''
     Optimization arguments
@@ -54,7 +54,9 @@ parser.add_argument('--n_epoch', type=int, default=100,
 parser.add_argument('--n_pool', type=int, default=4,
                     help='Number of process to sample subgraph')    
 parser.add_argument('--n_batch', type=int, default=32,
-                    help='Number of batch (sampled graphs) for each epoch')   
+                    help='Number of batch (sampled graphs) for each epoch') 
+parser.add_argument('--repeat', type=int, default=2,
+                    help='How many time to train over a singe batch (reuse data)') 
 parser.add_argument('--batch_size', type=int, default=256,
                     help='Number of output nodes for training')    
 parser.add_argument('--clip', type=int, default=0.2,
@@ -67,7 +69,6 @@ if args.cuda != -1:
     device = torch.device("cuda:" + str(args.cuda))
 else:
     device = torch.device("cpu")
-
 graph = dill.load(open(args.data_dir + '/graph%s.pk' % args.domain, 'rb'))
 
 train_range = {t: True for t in graph.times if t != None and t < 2015}
@@ -120,12 +121,12 @@ def author_disambiguation_sample(seed, pairs, time_range, batch_size):
 
     for name in names:
         author_list = name_count[name]
-        for author_id in author_list:
-            if author_id not in author_dict:
-                author_dict[author_id] = len(author_dict)
-                author_info += [[author_id, max_time]]
-        for paper_id, author_id, _time in pairs[name]:
-            paper_info  += [[paper_id, _time]]
+        for a_id in author_list:
+            if a_id not in author_dict:
+                author_dict[a_id] = len(author_dict)
+                author_info += [[a_id, max_time]]
+        for p_id, author_id, _time in pairs[name]:
+            paper_info  += [[p_id, _time]]
             '''
                 For each paper, create a list: the first entry is the true author's id, 
                 while the others are negative samples (id of authors with same name)
@@ -275,40 +276,41 @@ for epoch in np.arange(args.n_epoch) + 1:
     model.train()
     train_losses = []
     torch.cuda.empty_cache()
-    for node_feature, node_type, edge_time, edge_index, edge_type, ylabel in train_data:
-        node_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
-                               edge_time.to(device), edge_index.to(device), edge_type.to(device))
+    for _ in range(args.repeat):
+        for node_feature, node_type, edge_time, edge_index, edge_type, ylabel in train_data:
+            node_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
+                                   edge_time.to(device), edge_index.to(device), edge_type.to(device))
 
-        author_key = []
-        paper_key  = []
-        key_size   = []
-        for paper_id in ylabel:
-            author_ids  = ylabel[paper_id]
-            paper_key  += [np.repeat(paper_id, len(author_ids))]
-            author_key += [author_ids]
-            key_size   += [len(author_ids)]
-        paper_key  = torch.LongTensor(np.concatenate(paper_key)).to(device)
-        author_key = torch.LongTensor(np.concatenate(author_key)).to(device)
-        
-        train_paper_vecs  = node_rep[paper_key]
-        train_author_vecs = node_rep[author_key]
-        res = matcher.forward(train_author_vecs, train_paper_vecs, pair=True)
-        loss = mask_softmax(res, key_size)
+            author_key = []
+            paper_key  = []
+            key_size   = []
+            for paper_id in ylabel:
+                author_ids  = ylabel[paper_id]
+                paper_key  += [np.repeat(paper_id, len(author_ids))]
+                author_key += [author_ids]
+                key_size   += [len(author_ids)]
+            paper_key  = torch.LongTensor(np.concatenate(paper_key)).to(device)
+            author_key = torch.LongTensor(np.concatenate(author_key)).to(device)
 
-        
-        optimizer.zero_grad() 
-        torch.cuda.empty_cache()
-        loss.backward()
+            train_paper_vecs  = node_rep[paper_key]
+            train_author_vecs = node_rep[author_key]
+            res = matcher.forward(train_author_vecs, train_paper_vecs, pair=True)
+            loss = mask_softmax(res, key_size)
 
-        torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
-        optimizer.step()
-        
-        train_losses += [loss.cpu().detach().tolist()]
-        train_step += 1
-        scheduler.step(train_step)
-        del res, loss
+
+            optimizer.zero_grad() 
+            torch.cuda.empty_cache()
+            loss.backward()
+
+            torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
+            optimizer.step()
+
+            train_losses += [loss.cpu().detach().tolist()]
+            train_step += 1
+            scheduler.step(train_step)
+            del res, loss
     '''
-        Valid (2015 <= time < 2017)
+        Valid (2015 <= time <= 2016)
     '''
     model.eval()
     with torch.no_grad():
@@ -347,7 +349,7 @@ for epoch in np.arange(args.n_epoch) + 1:
         
         if valid_ndcg > best_val:
             best_val = valid_ndcg
-            torch.save(model, args.model_dir + args.model_name)
+            torch.save(model, os.path.join(args.model_dir, args.task_name + '_' + args.conv_name))
             print('UPDATE!!!')
         
         st = time.time()
@@ -360,18 +362,19 @@ for epoch in np.arange(args.n_epoch) + 1:
 
 
 '''
-    Evaluate the trained model via test set (time >= 2017)
+    Evaluate the trained model via test set (time > 2016)
 '''
 
-best_model = torch.load(args.model_dir + args.model_name)
+best_model = torch.load(os.path.join(args.model_dir, args.task_name + '_' + args.conv_name))
 best_model.eval()
 gnn, matcher = best_model
 with torch.no_grad():
     test_res = []
     for _ in range(10):
-        _time = np.random.choice(list(test_papers.keys()))
         node_feature, node_type, edge_time, edge_index, edge_type, ylabel = \
-                    node_classification_sample(randint(), test_pairs, test_range, args.batch_size)
+                    author_disambiguation_sample(randint(), test_pairs, test_range, args.batch_size)
+        node_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
+                               edge_time.to(device), edge_index.to(device), edge_type.to(device))
         
         author_key = []
         paper_key  = []

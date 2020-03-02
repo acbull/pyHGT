@@ -28,7 +28,7 @@ parser.add_argument('--citation_bar', type=int, default=1,
 args = parser.parse_args()
 
 
-train_time_bar = 2015
+test_time_bar = 2016
 
 cite_dict = defaultdict(lambda: 0)
 with open(args.input_dir + '/PR%s_20190919.tsv' % args.domain) as fin:
@@ -149,7 +149,6 @@ with open(args.input_dir + '/PF%s_20190919.tsv' % args.domain) as fin:
         
         
         
-coi = defaultdict(lambda: [])
 coa = defaultdict(lambda: {})
 with open(args.input_dir + '/PAuAf%s_20190919.tsv' % args.domain) as fin:
     fin.readline()
@@ -160,19 +159,8 @@ with open(args.input_dir + '/PAuAf%s_20190919.tsv' % args.domain) as fin:
             ai = {'id': l[1], 'type': 'author'}
             fi = {'id': l[2], 'type': 'affiliation'}
             coa[l[0]][int(l[-1])] = ai
-            coi[l[0]] += [fi]
             graph.add_edge(ai, fi, relation_type = 'in')
-            pid = graph.node_forward['paper'][l[0]]
-            for rel in graph.edge_list['paper']['venue']:
-                for vid in graph.edge_list['paper']['venue'][rel][pid]:
-                    graph.add_edge(ai, graph.node_bacward['venue'][vid], relation_type = 'APV_in')
-            for rel in graph.edge_list['paper']['field']:
-                for fid in graph.edge_list['paper']['field'][rel][pid]:
-                    graph.add_edge(ai, graph.node_bacward['field'][fid], relation_type = 'APF_in')        
-        
-        
-        
-        
+
 for pid in tqdm(coa):
     pi = pfl[pid]
     max_seq = max(coa[pid].keys())
@@ -184,19 +172,7 @@ for pid in tqdm(coa):
             graph.add_edge(ai, pi, time = pi['time'], relation_type = 'AP_write_last')
         else:
             graph.add_edge(ai, pi, time = pi['time'], relation_type = 'AP_write_other')
-        for seq_j in coa[pid]:
-            if seq_j > seq_i:
-                aj = coa[pid][seq_j]
-                graph.add_edge(ai, aj, time = pi['time'], relation_type = 'APA_coauthor', directed = False)        
         
-    
-        
-for pid in tqdm(coi):
-    pi = pfl[pid]
-    for seq_i, fi in enumerate(coi[pid]):
-        for seq_j, fj in enumerate(coi[pid]):
-            if seq_j > seq_i:
-                graph.add_edge(fi, fj, time = pi['time'], relation_type = 'IPI_coauthor', directed = False)        
         
         
         
@@ -271,7 +247,7 @@ for _type in graph.node_bacward:
         for _rel in graph.edge_list[_type]['paper']:
             for t in graph.edge_list[_type]['paper'][_rel]:
                 for s in graph.edge_list[_type]['paper'][_rel][t]:
-                    if graph.edge_list[_type]['paper'][_rel][t][s] < train_time_bar:
+                    if graph.edge_list[_type]['paper'][_rel][t][s] <= test_time_bar:
                         i += [[t, s]]
         if len(i) == 0:
             continue

@@ -1,14 +1,13 @@
 from conv import *
 
 class Classifier(nn.Module):
-    def __init__(self, n_hid, n_out, dropout = 0.5):
+    def __init__(self, n_hid, n_out):
         super(Classifier, self).__init__()
-        self.drop     = nn.Dropout(dropout)
-        self.n_hids   = n_hid
+        self.n_hid    = n_hid
         self.n_out    = n_out
         self.linear   = nn.Linear(n_hid,  n_out)
     def forward(self, x):
-        tx = self.linear(self.drop(x))
+        tx = self.linear(x)
         return torch.log_softmax(tx.squeeze(), dim=-1)
     def __repr__(self):
         return '{}(n_hid={}, n_out={})'.format(
@@ -19,15 +18,14 @@ class Matcher(nn.Module):
         Matching between a pair of nodes to conduct link prediction.
         Use multi-head attention as matching model.
     '''
-    def __init__(self, n_hid, dropout = 0.5):
+    def __init__(self, n_hid):
         super(Matcher, self).__init__()
         self.left_linear    = nn.Linear(n_hid,  n_hid)
         self.right_linear   = nn.Linear(n_hid,  n_hid)
         self.sqrt_hd  = math.sqrt(n_hid)
-        self.drop     = nn.Dropout(dropout)
         self.cache      = None
     def forward(self, x, y, infer = False, pair = False):
-        ty = self.drop(self.right_linear(y))
+        ty = self.right_linear(y)
         if infer:
             '''
                 During testing, we will consider millions or even billions of nodes as candidates (x).
@@ -40,19 +38,21 @@ class Matcher(nn.Module):
                 tx = self.left_linear(x)
                 self.cache = tx
         else:
-            tx = self.drop(self.left_linear(x))
+            tx = self.left_linear(x)
         if pair:
             res = (tx * ty).sum(dim=-1)
         else:
             res = torch.matmul(tx, ty.transpose(0,1))
         return res / self.sqrt_hd
-
+    def __repr__(self):
+        return '{}(n_hid={})'.format(
+            self.__class__.__name__, self.n_hid)
     
 
 
     
 class GNN(nn.Module):
-    def __init__(self, in_dim, n_hid, num_types, num_relations, n_heads, n_layers, dropout = 0.5, conv_name = 'hgt'):
+    def __init__(self, in_dim, n_hid, num_types, num_relations, n_heads, n_layers, dropout = 0.2, conv_name = 'hgt'):
         super(GNN, self).__init__()
         self.gcs = nn.ModuleList()
         self.num_types = num_types
@@ -81,7 +81,7 @@ class GNN(nn.Module):
     
 class RNNModel(nn.Module):
     """Container module with an encoder, a recurrent module, and a decoder."""
-    def __init__(self, n_word, ninp, nhid, nlayers, dropout=0.3):
+    def __init__(self, n_word, ninp, nhid, nlayers, dropout=0.2):
         super(RNNModel, self).__init__()
         self.drop    = nn.Dropout(dropout)
         self.rnn     = nn.LSTM(nhid, nhid, nlayers)
