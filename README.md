@@ -31,7 +31,7 @@ For raw data, you can download via (https://drive.google.com/open?id=1Np4J0q_ZIY
 
 For preprocessed data, you can download via (https://drive.google.com/open?id=1Np4J0q_ZIYr74IIdLGlAgzwwx00KJJeE).
 
-You can also use our code to process other heteogeneous graph, as long as you process them into our data structure `class Graph` in data.py.
+You can also use our code to process other heteogeneous graph, as long as you load them into our data structure `class Graph` in data.py. Refer to preprocess_OAG.py for a demonstration.
 
 ## Usage
 Execute the following scripts to train on paper-field(L2) classification task using HGT:
