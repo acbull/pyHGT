@@ -34,7 +34,7 @@ parser.add_argument('--n_heads', type=int, default=8,
                     help='Number of attention head')
 parser.add_argument('--n_layers', type=int, default=4,
                     help='Number of GNN layers')
-parser.add_argument('--dropout', type=int, default=0.25,
+parser.add_argument('--dropout', type=int, default=0.2,
                     help='Dropout ratio')
 parser.add_argument('--sample_depth', type=int, default=6,
                     help='How many numbers to sample the graph')
@@ -59,7 +59,7 @@ parser.add_argument('--repeat', type=int, default=2,
                     help='How many time to train over a singe batch (reuse data)') 
 parser.add_argument('--batch_size', type=int, default=256,
                     help='Number of output nodes for training')    
-parser.add_argument('--clip', type=int, default=0.2,
+parser.add_argument('--clip', type=int, default=0.25,
                     help='Gradient Norm Clipping') 
 
 
