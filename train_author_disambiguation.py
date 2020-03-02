@@ -84,7 +84,7 @@ name_count = defaultdict(lambda: [])
 for i, j in tqdm(graph.node_feature['author'].iterrows(), total = len(graph.node_feature['author'])):
     if i in first_author_dict:
         name_count[j['name']] += [i]
-name_count = {name: name_count[name] for name in name_count if len(name_count[name]) >= 2}
+name_count = {name: name_count[name] for name in name_count if len(name_count[name]) >= 4}
 
 cand_list = list(graph.edge_list['venue']['paper']['PV_Journal'].keys())
 
@@ -106,9 +106,6 @@ def author_disambiguation_sample(seed, pairs, time_range, batch_size):
     '''
     np.random.seed(seed)
     names = np.random.choice(list(pairs.keys()), batch_size // 4, replace = False)
-    source_dict = {}
-    target_info = []
-    source_info  = []
     '''
         (2) Get all the papers written by these same-name authors, and then prepare the label
     '''
@@ -329,9 +326,9 @@ for epoch in np.arange(args.n_epoch) + 1:
         paper_key  = torch.LongTensor(np.concatenate(paper_key)).to(device)
         author_key = torch.LongTensor(np.concatenate(author_key)).to(device)
         
-        train_paper_vecs  = node_rep[paper_key]
-        train_author_vecs = node_rep[author_key]
-        res = matcher.forward(train_author_vecs, train_paper_vecs, pair=True)
+        valid_paper_vecs  = node_rep[paper_key]
+        valid_author_vecs = node_rep[author_key]
+        res = matcher.forward(valid_author_vecs, valid_paper_vecs, pair=True)
         loss = mask_softmax(res, key_size)
         '''
             Calculate Valid NDCG. Update the best model based on highest NDCG score.
@@ -387,9 +384,9 @@ with torch.no_grad():
         paper_key  = torch.LongTensor(np.concatenate(paper_key)).to(device)
         author_key = torch.LongTensor(np.concatenate(author_key)).to(device)
         
-        train_paper_vecs  = node_rep[paper_key]
-        train_author_vecs = node_rep[author_key]
-        res = matcher.forward(train_author_vecs, train_paper_vecs, pair=True)
+        test_paper_vecs  = node_rep[paper_key]
+        test_author_vecs = node_rep[author_key]
+        res = matcher.forward(test_author_vecs, test_paper_vecs, pair=True)
 
         ser = 0
         for s in key_size:
