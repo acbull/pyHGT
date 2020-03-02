@@ -343,7 +343,7 @@ for epoch in np.arange(args.n_epoch) + 1:
             valid_res += [r.cpu().detach().tolist()]
             ser += s
         valid_ndcg = np.average([ndcg_at_k(resi, len(resi)) for resi in valid_res])
-        valid_mrr  = mean_reciprocal_rank(valid_res)
+        valid_mrr  = np.average(mean_reciprocal_rank(valid_res))
         
         if valid_ndcg > best_val:
             best_val = valid_ndcg
