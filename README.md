@@ -25,11 +25,11 @@ This implementation is based on pytorch_geometric. To run the code, you need the
 - [sklearn](https://github.com/scikit-learn/scikit-learn)
 - [tqdm](https://github.com/tqdm/tqdm)
 
-Our current experiments are conducted on Open Academic Graph (OAG). For easiness of usage, we split the whole dataset into different granularity: all CS papers (8.1G), all ML papers (1.9G), all NN papers (0.6G).
+Our current experiments are conducted on Open Academic Graph (OAG). For easiness of usage, we split the whole dataset into different granularity: all CS papers (8.1G), all ML papers (1.9G), all NN papers (0.6G), and provide the preprocessed data. You can download via (https://drive.google.com/open?id=1Np4J0q_ZIYr74IIdLGlAgzwwx00KJJeE).
 
-For raw data, you can download via (https://drive.google.com/open?id=1Np4J0q_ZIYr74IIdLGlAgzwwx00KJJeE). After downloading it, run preprocess_OAG.py to extract features and store them in our data structure.
+If you want to directly process from raw data, you can download via (https://drive.google.com/open?id=1Np4J0q_ZIYr74IIdLGlAgzwwx00KJJeE). After downloading it, run preprocess_OAG.py to extract features and store them in our data structure.
 
-For preprocessed data, you can download via (https://drive.google.com/open?id=1Np4J0q_ZIYr74IIdLGlAgzwwx00KJJeE).
+
 
 You can also use our code to process other heteogeneous graph, as long as you load them into our data structure `class Graph` in data.py. Refer to preprocess_OAG.py for a demonstration.
 
