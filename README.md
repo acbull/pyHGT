@@ -43,6 +43,7 @@ There are some key options of this scrips:
 - `--n_pool`: The number of process to parallely conduct sampling. If one has a machine with large memory, can consider adding this number to reduce batch prepartion time.
 - `--repeat`: The number of time to reuse a sampled batch for training. If the training time is much smaller than sampling time, can consider adding this number.
 
+The details of other optional hyperparameters can be found in train_*.py. 
 ### Citation
 
 Please consider citing the following paper when using our code for your application.
