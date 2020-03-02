@@ -35,7 +35,7 @@ You can also use our code to process other heteogeneous graph, as long as you pr
 Execute the following scripts to train on paper-field(L2) classification task using HGT:
 
 ```bash
-python3 train_paper_field.py --data_dir PATH_OF_DATASET --model_dir PATH_OF_SAVED_MODEL --conv_name hgt --n_layers 3
+python3 train_paper_field.py --data_dir PATH_OF_DATASET --model_dir PATH_OF_SAVED_MODEL --conv_name hgt
 ```
 There are some key options of this scrips:
 - `conv_name`: Choose corresponding model for training. By default we use HGT.
