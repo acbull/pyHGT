@@ -32,7 +32,7 @@ parser.add_argument('--n_hid', type=int, default=400,
                     help='Number of hidden dimension')
 parser.add_argument('--n_heads', type=int, default=8,
                     help='Number of attention head')
-parser.add_argument('--n_layers', type=int, default=4,
+parser.add_argument('--n_layers', type=int, default=3,
                     help='Number of GNN layers')
 parser.add_argument('--dropout', type=int, default=0.2,
                     help='Dropout ratio')
