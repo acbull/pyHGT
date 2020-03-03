@@ -82,30 +82,7 @@ class Graph():
     def get_types(self):
         return list(self.node_feature.keys())
 
-def feature_OAG(layer_data, graph):
-    feature = {}
-    times   = {}
-    indxs   = {}
-    texts   = []
-    for _type in layer_data:
-        if len(layer_data[_type]) == 0:
-            continue
-        idxs  = np.array(list(layer_data[_type].keys()))
-        tims  = np.array(list(layer_data[_type].values()))[:,1]
-        
-        if 'node_emb' in graph.node_feature[_type]:
-            feature[_type] = np.array(list(graph.node_feature[_type].loc[idxs, 'node_emb']), dtype=np.float)
-        else:
-            feature[_type] = np.zeros([len(idxs), 400])
-        feature[_type] = np.concatenate((feature[_type], list(graph.node_feature[_type].loc[idxs, 'emb']),\
-            np.log10(np.array(list(graph.node_feature[_type].loc[idxs, 'citation'])).reshape(-1, 1) + 0.01)), axis=1)
-        
-        times[_type]   = tims
-        indxs[_type]   = idxs
-        
-        if _type == 'paper':
-            texts = np.array(list(graph.node_feature[_type].loc[idxs, 'title']), dtype=np.str)
-    return feature, times, indxs, texts
+
 
 def sample_subgraph(graph, time_range, sampled_depth = 2, sampled_number = 8, inp = None, feature_extractor = feature_OAG):
     '''
@@ -278,3 +255,28 @@ def to_torch(feature, time, edge_list, graph):
     return node_feature, node_type, edge_time, edge_index, edge_type, node_dict, edge_dict
     
 
+
+def feature_OAG(layer_data, graph):
+    feature = {}
+    times   = {}
+    indxs   = {}
+    texts   = []
+    for _type in layer_data:
+        if len(layer_data[_type]) == 0:
+            continue
+        idxs  = np.array(list(layer_data[_type].keys()))
+        tims  = np.array(list(layer_data[_type].values()))[:,1]
+        
+        if 'node_emb' in graph.node_feature[_type]:
+            feature[_type] = np.array(list(graph.node_feature[_type].loc[idxs, 'node_emb']), dtype=np.float)
+        else:
+            feature[_type] = np.zeros([len(idxs), 400])
+        feature[_type] = np.concatenate((feature[_type], list(graph.node_feature[_type].loc[idxs, 'emb']),\
+            np.log10(np.array(list(graph.node_feature[_type].loc[idxs, 'citation'])).reshape(-1, 1) + 0.01)), axis=1)
+        
+        times[_type]   = tims
+        indxs[_type]   = idxs
+        
+        if _type == 'paper':
+            texts = np.array(list(graph.node_feature[_type].loc[idxs, 'title']), dtype=np.str)
+    return feature, times, indxs, texts
