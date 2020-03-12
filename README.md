@@ -27,6 +27,8 @@ This implementation is based on pytorch_geometric. To run the code, you need the
 - [gensim](https://github.com/RaRe-Technologies/gensim)
 - [sklearn](https://github.com/scikit-learn/scikit-learn)
 - [tqdm](https://github.com/tqdm/tqdm)
+- [dill](https://github.com/uqfoundation/dill)
+- [pandas](https://github.com/pandas-dev/pandas)
 
 Our current experiments are conducted on Open Academic Graph (OAG). For easiness of usage, we split and preprocess the whole dataset into different granularity: all CS papers (8.1G), all ML papers (1.9G), all NN papers (0.6G). You can download the preprocessed graph via (https://drive.google.com/open?id=1a85skqsMBwnJ151QpurLFSa9o2ymc_rq).
 
