@@ -20,7 +20,7 @@ The most important files in this projects are as follow:
 This implementation is based on pytorch_geometric. To run the code, you need the following dependencies:
 
 - [Pytorch 1.0](https://pytorch.org/)
-- [pytorch_geometric](https://pytorch-geometric.readthedocs.io/)
+- [pytorch_geometric 1.3.2](https://pytorch-geometric.readthedocs.io/)
 - [gensim](https://github.com/RaRe-Technologies/gensim)
 - [sklearn](https://github.com/scikit-learn/scikit-learn)
 - [tqdm](https://github.com/tqdm/tqdm)
