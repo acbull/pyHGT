@@ -21,6 +21,9 @@ This implementation is based on pytorch_geometric. To run the code, you need the
 
 - [Pytorch 1.3.0](https://pytorch.org/)
 - [pytorch_geometric 1.3.2](https://pytorch-geometric.readthedocs.io/)
+  - [torch-cluster==1.4.5]
+  - [torch-scatter==1.3.2]
+  - [torch-sparse==0.4.3]
 - [gensim](https://github.com/RaRe-Technologies/gensim)
 - [sklearn](https://github.com/scikit-learn/scikit-learn)
 - [tqdm](https://github.com/tqdm/tqdm)
