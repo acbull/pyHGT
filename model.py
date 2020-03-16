@@ -77,27 +77,3 @@ class GNN(nn.Module):
         for gc in self.gcs:
             meta_xs = gc(meta_xs, node_type, edge_index, edge_type, edge_time)
         return meta_xs   
-    
-    
-class RNNModel(nn.Module):
-    """Container module with an encoder, a recurrent module, and a decoder."""
-    def __init__(self, n_word, ninp, nhid, nlayers, dropout=0.2):
-        super(RNNModel, self).__init__()
-        self.drop    = nn.Dropout(dropout)
-        self.rnn     = nn.LSTM(nhid, nhid, nlayers)
-        self.encoder = nn.Embedding(n_word, nhid)
-        self.decoder = nn.Linear(nhid, n_word)
-        self.decoder.weight = self.encoder.weight
-        self.adapt   = nn.Linear(ninp + nhid, nhid)
-        self.encoder.weight.require_grad = False
-    def forward(self, inp, hidden = None):
-        emb = self.drop(self.encoder(inp))
-        if hidden is not None:
-            emb = torch.cat((emb, hidden), dim=-1)
-            emb = F.tanh(self.adapt(emb))
-        output, _ = self.rnn(self.drop(emb))
-        decoded = self.decoder(self.drop(output))
-        return decoded
-    def from_w2v(self, w2v):
-        initrange = 0.1
-        self.encoder.weight.data = w2v
