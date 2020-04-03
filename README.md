@@ -30,7 +30,7 @@ This implementation is based on pytorch_geometric. To run the code, you need the
 - [dill](https://github.com/uqfoundation/dill)
 - [pandas](https://github.com/pandas-dev/pandas)
 
-You can simply run ```pip install requirements.txt``` to install all the necessary packages.
+You can simply run ```pip install -r requirements.txt``` to install all the necessary packages.
 
   
 ## OAG DataSet
