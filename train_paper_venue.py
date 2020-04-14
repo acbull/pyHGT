@@ -89,21 +89,17 @@ criterion = nn.NLLLoss()
 def node_classification_sample(seed, pairs, time_range, batch_size):
     '''
         sub-graph sampling and label preparation for node classification:
-        (1) Sample batch_size number of output nodes (papers)
+        (1) Sample batch_size number of output nodes (papers) and their time.
     '''
     np.random.seed(seed)
     target_ids = np.random.choice(list(pairs.keys()), batch_size, replace = False)
     target_info = []
-    '''
-        (2) Get all the source_nodes (Journal) associated with these output nodes.
-            Collect their information and time as seed nodes for sampling sub-graph.
-    '''
     for target_id in target_ids:
         _, _time = pairs[target_id]
         target_info += [[target_id, _time]]
 
     '''
-        (3) Based on the seed nodes, sample a subgraph with 'sampled_depth' and 'sampled_number'
+        (2) Based on the seed nodes, sample a subgraph with 'sampled_depth' and 'sampled_number'
     '''
     feature, times, edge_list, _, _ = sample_subgraph(graph, time_range, \
                 inp = {'paper': np.array(target_info)}, \
@@ -111,7 +107,7 @@ def node_classification_sample(seed, pairs, time_range, batch_size):
 
 
     '''
-        (4) Mask out the edge between the output target nodes (paper) with output source nodes (Journal)
+        (3) Mask out the edge between the output target nodes (paper) with output source nodes (Journal)
     '''
     masked_edge_list = []
     for i in edge_list['paper']['venue']['rev_PV_Journal']:
@@ -126,12 +122,12 @@ def node_classification_sample(seed, pairs, time_range, batch_size):
     edge_list['venue']['paper']['PV_Journal'] = masked_edge_list
     
     '''
-        (5) Transform the subgraph into torch Tensor (edge_index is in format of pytorch_geometric)
+        (4) Transform the subgraph into torch Tensor (edge_index is in format of pytorch_geometric)
     '''
     node_feature, node_type, edge_time, edge_index, edge_type, node_dict, edge_dict = \
             to_torch(feature, times, edge_list, graph)
     '''
-        (6) Prepare the labels for each output target node (paper), and their index in sampled graph.
+        (5) Prepare the labels for each output target node (paper), and their index in sampled graph.
             (node_dict[type][0] stores the start index of a specific type of nodes)
     '''
     ylabel = torch.zeros(batch_size, dtype = torch.long)
