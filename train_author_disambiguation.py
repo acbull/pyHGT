@@ -92,7 +92,7 @@ def mask_softmax(pred, size):
     loss = 0
     stx = 0
     for l in size:
-        loss += torch.log_softmax(pred[stx: stx + l], dim=-1)[0] / l
+        loss += torch.log_softmax(pred[stx: stx + l], dim=-1)[0] / np.log(l)
         stx += l
     return -loss
 
