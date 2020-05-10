@@ -35,7 +35,7 @@ You can simply run ```pip install -r requirements.txt``` to install all the nece
   
 ## OAG DataSet
 
-Our current experiments are conducted on Open Academic Graph (OAG). For easiness of usage, we split and preprocess the whole dataset into different granularity: all CS papers (8.1G), all ML papers (1.9G), all NN papers (0.6G). You can download the preprocessed graph via (https://drive.google.com/open?id=1a85skqsMBwnJ151QpurLFSa9o2ymc_rq).
+Our current experiments are conducted on Open Academic Graph (OAG). For easiness of usage, we split and preprocess the whole dataset into different granularity: all **CS papers (8.1G), all ML papers (1.9G), all NN papers (0.6G)**. You can download the preprocessed graph via (https://drive.google.com/open?id=1a85skqsMBwnJ151QpurLFSa9o2ymc_rq).
 
 If you want to directly process from raw data, you can download via (https://drive.google.com/open?id=1yDdVaartOCOSsQlUZs8cJcAUhmvRiBSz). After downloading it, run preprocess_OAG.py to extract features and store them in our data structure.
 
