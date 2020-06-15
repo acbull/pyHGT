@@ -131,11 +131,11 @@ def node_classification_sample(seed, pairs, time_range, batch_size):
         (5) Prepare the labels for each output target node (paper), and their index in sampled graph.
             (node_dict[type][0] stores the start index of a specific type of nodes)
     '''
-    ylabel = torch.zeros(batch_size, len(cand_list))
+    ylabel = np.zeros([args.batch_size, len(cand_list)])
     for x_id, target_id in enumerate(target_ids):
         for source_id in pairs[target_id][0]:
             ylabel[x_id][cand_list.index(source_id)] = 1
-    ylabel /= ylabel.sum(axis=1).view(-1, 1)
+    ylabel /= ylabel.sum(axis=1).reshape(-1, 1)
     x_ids = np.arange(batch_size) + node_dict['paper'][0]
     return node_feature, node_type, edge_time, edge_index, edge_type, x_ids, ylabel
     
@@ -243,7 +243,7 @@ for epoch in np.arange(args.n_epoch) + 1:
             node_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
                                    edge_time.to(device), edge_index.to(device), edge_type.to(device))
             res  = classifier.forward(node_rep[x_ids])
-            loss = criterion(res, ylabel.to(device))
+            loss = criterion(res, torch.FloatTensor(ylabel).to(device))
 
             optimizer.zero_grad() 
             torch.cuda.empty_cache()
@@ -265,14 +265,14 @@ for epoch in np.arange(args.n_epoch) + 1:
         node_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
                                    edge_time.to(device), edge_index.to(device), edge_type.to(device))
         res  = classifier.forward(node_rep[x_ids])
-        loss = criterion(res, ylabel.to(device))
+        loss = criterion(res, torch.FloatTensor(ylabel).to(device))
         
         '''
             Calculate Valid NDCG. Update the best model based on highest NDCG score.
         '''
         valid_res = []
         for ai, bi in zip(ylabel, res.argsort(descending = True)):
-            valid_res += [ai[bi].tolist()]
+            valid_res += [ai[bi]]
         valid_ndcg = np.average([ndcg_at_k(resi, len(resi)) for resi in valid_res])
         
         if valid_ndcg > best_val:
@@ -302,7 +302,7 @@ with torch.no_grad():
                     edge_time.to(device), edge_index.to(device), edge_type.to(device))[x_ids]
         res = classifier.forward(paper_rep)
         for ai, bi in zip(ylabel, res.argsort(descending = True)):
-            test_res += [ai[bi].tolist()]
+            test_res += [ai[bi]]
     test_ndcg = [ndcg_at_k(resi, len(resi)) for resi in test_res]
     print('Last Test NDCG: %.4f' % np.average(test_ndcg))
     test_mrr = mean_reciprocal_rank(test_res)
@@ -321,7 +321,7 @@ with torch.no_grad():
                     edge_time.to(device), edge_index.to(device), edge_type.to(device))[x_ids]
         res = classifier.forward(paper_rep)
         for ai, bi in zip(ylabel, res.argsort(descending = True)):
-            test_res += [ai[bi].tolist()]
+            test_res += [ai[bi]]
     test_ndcg = [ndcg_at_k(resi, len(resi)) for resi in test_res]
     print('Best Test NDCG: %.4f' % np.average(test_ndcg))
     test_mrr = mean_reciprocal_rank(test_res)
