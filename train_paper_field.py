@@ -87,13 +87,13 @@ Thus this task is a multi-label classification.
 '''
 criterion = nn.KLDivLoss(reduction='batchmean')
 
-def node_classification_sample(seed, pairs, time_range, batch_size):
+def node_classification_sample(seed, pairs, time_range):
     '''
         sub-graph sampling and label preparation for node classification:
         (1) Sample batch_size number of output nodes (papers), get their time.
     '''
     np.random.seed(seed)
-    target_ids = np.random.choice(list(pairs.keys()), batch_size, replace = False)
+    target_ids = np.random.choice(list(pairs.keys()), args.batch_size, replace = False)
     target_info = []
     for target_id in target_ids:
         _, _time = pairs[target_id]
@@ -112,13 +112,13 @@ def node_classification_sample(seed, pairs, time_range, batch_size):
     '''
     masked_edge_list = []
     for i in edge_list['paper']['field']['rev_PF_in_L2']:
-        if i[0] >= batch_size:
+        if i[0] >= args.batch_size:
             masked_edge_list += [i]
     edge_list['paper']['field']['rev_PF_in_L2'] = masked_edge_list
 
     masked_edge_list = []
     for i in edge_list['field']['paper']['PF_in_L2']:
-        if i[1] >= batch_size:
+        if i[1] >= args.batch_size:
             masked_edge_list += [i]
     edge_list['field']['paper']['PF_in_L2'] = masked_edge_list
     
@@ -136,7 +136,7 @@ def node_classification_sample(seed, pairs, time_range, batch_size):
         for source_id in pairs[target_id][0]:
             ylabel[x_id][cand_list.index(source_id)] = 1
     ylabel /= ylabel.sum(axis=1).reshape(-1, 1)
-    x_ids = np.arange(batch_size) + node_dict['paper'][0]
+    x_ids = np.arange(args.batch_size) + node_dict['paper'][0]
     return node_feature, node_type, edge_time, edge_index, edge_type, x_ids, ylabel
     
 def prepare_data(pool):
@@ -146,10 +146,10 @@ def prepare_data(pool):
     jobs = []
     for batch_id in np.arange(args.n_batch):
         p = pool.apply_async(node_classification_sample, args=(randint(), \
-            sel_train_pairs, train_range, args.batch_size))
+            sel_train_pairs, train_range))
         jobs.append(p)
     p = pool.apply_async(node_classification_sample, args=(randint(), \
-            sel_valid_pairs, valid_range, args.batch_size))
+            sel_valid_pairs, valid_range))
     jobs.append(p)
     return jobs
 
