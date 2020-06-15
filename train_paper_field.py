@@ -272,7 +272,7 @@ for epoch in np.arange(args.n_epoch) + 1:
         '''
         valid_res = []
         for ai, bi in zip(ylabel, res.argsort(descending = True)):
-            valid_res += [ai[bi]]
+            valid_res += [ai[bi.cpu().numpy()]]
         valid_ndcg = np.average([ndcg_at_k(resi, len(resi)) for resi in valid_res])
         
         if valid_ndcg > best_val:
@@ -302,7 +302,7 @@ with torch.no_grad():
                     edge_time.to(device), edge_index.to(device), edge_type.to(device))[x_ids]
         res = classifier.forward(paper_rep)
         for ai, bi in zip(ylabel, res.argsort(descending = True)):
-            test_res += [ai[bi]]
+            test_res += [ai[bi.cpu().numpy()]]
     test_ndcg = [ndcg_at_k(resi, len(resi)) for resi in test_res]
     print('Last Test NDCG: %.4f' % np.average(test_ndcg))
     test_mrr = mean_reciprocal_rank(test_res)
@@ -321,7 +321,7 @@ with torch.no_grad():
                     edge_time.to(device), edge_index.to(device), edge_type.to(device))[x_ids]
         res = classifier.forward(paper_rep)
         for ai, bi in zip(ylabel, res.argsort(descending = True)):
-            test_res += [ai[bi]]
+            test_res += [ai[bi.cpu().numpy()]]
     test_ndcg = [ndcg_at_k(resi, len(resi)) for resi in test_res]
     print('Best Test NDCG: %.4f' % np.average(test_ndcg))
     test_mrr = mean_reciprocal_rank(test_res)
