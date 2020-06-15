@@ -297,7 +297,7 @@ with torch.no_grad():
     test_res = []
     for _ in range(10):
         node_feature, node_type, edge_time, edge_index, edge_type, x_ids, ylabel = \
-                    node_classification_sample(randint(), test_pairs, test_range, args.batch_size)
+                    node_classification_sample(randint(), test_pairs, test_range)
         paper_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
                     edge_time.to(device), edge_index.to(device), edge_type.to(device))[x_ids]
         res = classifier.forward(paper_rep)
@@ -316,7 +316,7 @@ with torch.no_grad():
     test_res = []
     for _ in range(10):
         node_feature, node_type, edge_time, edge_index, edge_type, x_ids, ylabel = \
-                    node_classification_sample(randint(), test_pairs, test_range, args.batch_size)
+                    node_classification_sample(randint(), test_pairs, test_range)
         paper_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
                     edge_time.to(device), edge_index.to(device), edge_type.to(device))[x_ids]
         res = classifier.forward(paper_rep)
