@@ -26,12 +26,14 @@ class HGTConv(MessagePassing):
         self.q_linears   = nn.ModuleList()
         self.v_linears   = nn.ModuleList()
         self.a_linears   = nn.ModuleList()
+        self.norms       = nn.ModuleList()
         
         for t in range(num_types):
             self.k_linears.append(nn.Linear(in_dim,   out_dim))
             self.q_linears.append(nn.Linear(in_dim,   out_dim))
             self.v_linears.append(nn.Linear(in_dim,   out_dim))
             self.a_linears.append(nn.Linear(out_dim,  out_dim))
+            self.norms.append(nn.LayerNorm(out_dim))
             
         '''
             TODO: make relation_pri smaller, as not all <st, rt, tt> pair exist in meta relation list.
@@ -115,11 +117,12 @@ class HGTConv(MessagePassing):
             idx = (node_type == int(target_type))
             if idx.sum() == 0:
                 continue
+            trans_out = self.a_linears[target_type](aggr_out[idx])
             '''
                 Add skip connection with learnable weight self.skip[t_id]
             '''
-            alpha = F.sigmoid(self.skip[target_type])
-            res[idx] = self.a_linears[target_type](aggr_out[idx]) * alpha + node_inp[idx] * (1 - alpha)
+            alpha = torch.sigmoid(self.skip[target_type])
+            res[idx] = self.norms[target_type](trans_out * alpha + node_inp[idx] * (1 - alpha))
         return self.drop(res)
 
     def __repr__(self):
