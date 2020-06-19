@@ -38,7 +38,7 @@ class HGTConv(MessagePassing):
         '''
             TODO: make relation_pri smaller, as not all <st, rt, tt> pair exist in meta relation list.
         '''
-        self.relation_pri   = nn.Parameter(torch.ones(num_types, num_relations, num_types, self.n_heads))
+        self.relation_pri   = nn.Parameter(torch.ones(num_relations, self.n_heads))
         self.relation_att   = nn.Parameter(torch.Tensor(num_relations, n_heads, self.d_k, self.d_k))
         self.relation_msg   = nn.Parameter(torch.Tensor(num_relations, n_heads, self.d_k, self.d_k))
         self.skip           = nn.Parameter(torch.ones(num_types))
@@ -90,8 +90,7 @@ class HGTConv(MessagePassing):
                     q_mat = q_linear(target_node_vec).view(-1, self.n_heads, self.d_k)
                     k_mat = k_linear(source_node_vec).view(-1, self.n_heads, self.d_k)
                     k_mat = torch.bmm(k_mat.transpose(1,0), self.relation_att[relation_type]).transpose(1,0)
-                    res_att[idx] = (q_mat * k_mat).sum(dim=-1) * \
-                        self.relation_pri[target_type][relation_type][source_type] / self.sqrt_dk
+                    res_att[idx] = (q_mat * k_mat).sum(dim=-1) * self.relation_pri[relation_type] / self.sqrt_dk
                     '''
                         Step 2: Heterogeneous Message Passing
                     '''
