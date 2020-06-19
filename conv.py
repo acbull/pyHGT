@@ -109,7 +109,7 @@ class HGTConv(MessagePassing):
     def update(self, aggr_out, node_inp, node_type):
         '''
             Step 3: Target-specific Aggregation
-            x = W[node_type] * gelu(Agg(x)) + x
+            x = LayerNorm[node_type] (W[node_type] * gelu(Agg(x)) + x)
         '''
         aggr_out = F.gelu(aggr_out)
         res = torch.zeros(aggr_out.size(0), self.out_dim).to(node_inp.device)
