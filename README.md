@@ -6,6 +6,8 @@ Heterogeneous Graph Transformer is a graph neural network architecture that can 
 
 You can see our WWW 2020 paper [“**Heterogeneous Graph Transformer**”](https://arxiv.org/abs/2003.01332)  for more details.
 
+This implementation of HGT is based on [Pytorch Geometric](https://github.com/rusty1s/pytorch_geometric) API
+
 ## Overview
 The most important files in this projects are as follow:
 - conv.py: The core of our model, implements the transformer-like heterogeneous graph convolutional layer.
