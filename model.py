@@ -50,9 +50,9 @@ class Matcher(nn.Module):
     
 
 
-    
+        
 class GNN(nn.Module):
-    def __init__(self, in_dim, n_hid, num_types, num_relations, n_heads, n_layers, dropout = 0.2, conv_name = 'hgt'):
+    def __init__(self, in_dim, n_hid, num_types, num_relations, n_heads, n_layers, dropout = 0.2, conv_name = 'hgt', prev_norm = False, last_norm = False, use_RTE = True):
         super(GNN, self).__init__()
         self.gcs = nn.ModuleList()
         self.num_types = num_types
@@ -62,8 +62,9 @@ class GNN(nn.Module):
         self.drop      = nn.Dropout(dropout)
         for t in range(num_types):
             self.adapt_ws.append(nn.Linear(in_dim, n_hid))
-        for l in range(n_layers):
-            self.gcs.append(GeneralConv(conv_name, n_hid, n_hid, num_types, num_relations, n_heads, dropout))
+        for l in range(n_layers - 1):
+            self.gcs.append(GeneralConv(conv_name, n_hid, n_hid, num_types, num_relations, n_heads, dropout, use_norm = prev_norm, use_RTE = use_RTE))
+        self.gcs.append(GeneralConv(conv_name, n_hid, n_hid, num_types, num_relations, n_heads, dropout, use_norm = last_norm, use_RTE = use_RTE))
 
     def forward(self, node_feature, node_type, edge_time, edge_index, edge_type):
         res = torch.zeros(node_feature.size(0), self.n_hid).to(node_feature.device)
@@ -76,4 +77,4 @@ class GNN(nn.Module):
         del res
         for gc in self.gcs:
             meta_xs = gc(meta_xs, node_type, edge_index, edge_type, edge_time)
-        return meta_xs   
+        return meta_xs  
