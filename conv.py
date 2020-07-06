@@ -251,7 +251,7 @@ class DenseHGTConv(MessagePassing):
     def update(self, aggr_out, node_inp, node_type):
         '''
             Step 3: Target-specific Aggregation
-            x = W[node_type] * gelu(Agg(x)) + x
+            x = W[node_type] * Agg(x) + x
         '''
         res = torch.zeros(aggr_out.size(0), self.out_dim).to(node_inp.device)
         for target_type in range(self.num_types):
@@ -264,6 +264,12 @@ class DenseHGTConv(MessagePassing):
             '''
             if self.use_norm:
                 trans_out = self.norms[target_type](trans_out + node_inp[idx])
+                
+            '''
+                Step 4: Shared Dense Layer
+                x = Out_L(gelu(Mid_L(x))) + x
+            '''
+                
             trans_out     = self.drop(self.out_linear(F.gelu(self.mid_linear(trans_out)))) + trans_out
             res[idx]      = self.out_norm(trans_out)
         return res
