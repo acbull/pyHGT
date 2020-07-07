@@ -1,6 +1,6 @@
 ## Usage
 
-This experiment is based on stanford OGB (1.2.1) benchmark. The description of ogbn-mag is [avaiable here](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag).
+This experiment is based on stanford OGB (1.2.1) benchmark. The description of ogbn-mag is [avaiable here](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag). The steps are:
 
   1. run ```python preprocess_ogbn_mag.py``` to turn the dataset into our own data structure. As the MAG dataset only have input attributes (features) for paper nodes, for all the other types of nodes (author, affiliation, topic), we simply take the average of their connected paper nodes as their input features.
 
