@@ -1,6 +1,16 @@
 import numpy as np
 import scipy.sparse as sp
 import torch
+from texttable import Texttable
+from collections import OrderedDict
+
+def args_print(args):
+    _dict = vars(args)
+    t = Texttable() 
+    t.add_row(["Parameter", "Value"])
+    for k in _dict:
+        t.add_row([k, _dict[k]])
+    print(t.draw())
 
 def dcg_at_k(r, k):
     r = np.asfarray(r)[:k]
