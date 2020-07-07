@@ -27,9 +27,9 @@ parser.add_argument('--data_dir', type=int, default='/datadrive/dataset/OGB_MAG.
                     help='The address of preprocessed graph.')
 parser.add_argument('--model_dir', type=int, default='./hgt_4layer',
                     help='The address for storing the trained models.')
-parser.add_argument('--task_type', type=str, default='ensemble',
-                    help='Whether to use ensemble evaluation or sequential evaluation')
-parser.add_argument('--ensemble_num', type=int, default=8,
+parser.add_argument('--task_type', type=str, default='variance_reduce',
+                    help='Whether to use variance_reduce evaluation or sequential evaluation')
+parser.add_argument('--vr_num', type=int, default=8,
                     help='Whether to use ensemble evaluation or sequential evaluation')
 parser.add_argument('--n_pool', type=int, default=8,
                     help='Number of process to sample subgraph')  
@@ -94,7 +94,7 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
             p = pool.apply_async(node_classification_sample, args=([randint(), \
                             np.random.choice(graph.train_paper, args.batch_size, replace = False)]))
             jobs.append(p)
-    elif task_type == 'ensemble':
+    elif task_type == 'variance_reduce':
         target_papers = graph.test_paper[s_idx * args.batch_size : (s_idx + 1) * args.batch_size]
         for batch_id in np.arange(n_batch):
             p = pool.apply_async(node_classification_sample, args=([randint(), target_papers]))
@@ -122,11 +122,11 @@ criterion = nn.NLLLoss()
 
 model.eval()
 with torch.no_grad():
-    if args.task_type == 'ensemble':
+    if args.task_type == 'variance_reduce':
         y_pred = []
         y_true = []
         pool = mp.Pool(args.n_pool)
-        jobs = prepare_data(pool, task_type = 'ensemble', s_idx = 0, n_batch = 8)
+        jobs = prepare_data(pool, task_type = 'variance_reduce', s_idx = 0, n_batch = args.vr_num)
         with tqdm(np.arange(len(graph.test_paper) // args.batch_size), desc='eval') as monitor:
             for s_idx in monitor:
                 ress = []
@@ -134,7 +134,7 @@ with torch.no_grad():
                 pool.close()
                 pool.join()
                 pool = mp.Pool(args.n_pool)
-                jobs = prepare_data(pool, task_type = 'ensemble', s_idx = s_idx, n_batch = 8)
+                jobs = prepare_data(pool, task_type = 'variance_reduce', s_idx = s_idx, n_batch = args.vr_num)
 
                 for node_feature, node_type, edge_time, edge_index, edge_type, (train_mask, valid_mask, test_mask), ylabel in test_data:
                     node_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
@@ -155,14 +155,14 @@ with torch.no_grad():
         y_pred = []
         y_true = []
         pool = mp.Pool(args.n_pool)
-        jobs = prepare_data(pool, task_type = 'sequential', s_idx = 0, n_batch = args.ensemble_num, batch_size=args.batch_size)
+        jobs = prepare_data(pool, task_type = 'sequential', s_idx = 0, n_batch = args.n_batch, batch_size=args.batch_size)
         with tqdm(np.arange(len(graph.test_paper) // args.batch_size), desc='eval') as monitor:
             for s_idx in monitor:
                 test_data = [job.get() for job in jobs]
                 pool.close()
                 pool.join()
                 pool = mp.Pool(args.n_pool)
-                jobs = prepare_data(pool, is_test = True, s_idx = int(s_idx * args.ensemble_num), batch_size=args.batch_size)
+                jobs = prepare_data(pool, is_test = True, s_idx = int(s_idx * args.n_batch), batch_size=args.batch_size)
 
                 for node_feature, node_type, edge_time, edge_index, edge_type, (train_mask, valid_mask, test_mask), ylabel in test_data:
                     ylabel = ylabel[:args.batch_size]
