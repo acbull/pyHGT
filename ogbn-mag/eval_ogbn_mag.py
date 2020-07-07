@@ -84,6 +84,7 @@ classifier = Classifier(args.n_hid, graph.y.max()+1)
 model = nn.Sequential(gnn, classifier)
 model.load_state_dict(torch.load(args.model_dir))
 model.to(device)
+print('Model #Params: %d' % get_n_params(model))
 criterion = nn.NLLLoss()
 
 model.eval()

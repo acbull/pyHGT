@@ -119,6 +119,7 @@ gnn = GNN(conv_name = args.conv_name, in_dim = len(graph.node_feature['paper'][0
 classifier = Classifier(args.n_hid, graph.y.max()+1)
 
 model = nn.Sequential(gnn, classifier).to(device)
+print('Model #Params: %d' % get_n_params(model))
 criterion = nn.NLLLoss()
 
 
