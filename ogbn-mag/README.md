@@ -14,6 +14,6 @@ The **pre-trained model** is [avaiable here](https://drive.google.com/file/d/186
 
 Reference performance numbers for the ACM dataset:
 
-| # Parameter          | Accuracy (VR) | Accuracy (Seq)  | Hardware         |
-| -------------------  | --------------| --------------  |--------------    |
-| 21173389             | 0.5007        | 0.4940          | Tesla K80 (12GB) |
+ | Accuracy (VR)   | Accuracy (Seq) | # Parameter     | Hardware         |
+ | --------------- | -------------- | --------------  |--------------    |
+ | 0.5007          | 0.4940         | 21,173,389      | Tesla K80 (12GB) |
