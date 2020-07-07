@@ -78,3 +78,20 @@ def feature_OAG(layer_data, graph):
         if _type == 'paper':
             texts = np.array(list(graph.node_feature[_type].loc[idxs, 'title']), dtype=np.str)
     return feature, times, indxs, texts
+
+
+def feature_MAG(layer_data, graph):
+    feature = {}
+    times   = {}
+    indxs   = {}
+    texts   = []
+    for _type in layer_data:
+        if len(layer_data[_type]) == 0:
+            continue
+        idxs  = np.array(list(layer_data[_type].keys()), dtype = np.int)
+        tims  = np.array(list(layer_data[_type].values()))[:,1]
+        feature[_type] = graph.node_feature[_type][idxs]
+        times[_type]   = tims
+        indxs[_type]   = idxs
+        
+    return feature, times, indxs, texts
