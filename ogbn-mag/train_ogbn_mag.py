@@ -23,10 +23,10 @@ parser = argparse.ArgumentParser(description='Training GNN on ogbn-mag benchmark
 
 
 
-parser.add_argument('--input_dir', type=int, default=0,
-                    help='Avaiable GPU ID')
-parser.add_argument('--model_dir', type=int, default=0,
-                    help='Avaiable GPU ID')
+parser.add_argument('--data_dir', type=int, default='/datadrive/dataset/OGB_MAG.pk',
+                    help='The address of preprocessed graph.')
+parser.add_argument('--model_dir', type=int, default='./hgt_4layer',
+                    help='The address for storing the trained models.')
 parser.add_argument('--plot', type=int, action='store_true',
                     help='Whether to plot the loss/acc curve')
 parser.add_argument('--cuda', type=int, default=0,
@@ -70,7 +70,7 @@ parser.add_argument('--clip', type=int, default=1.0,
 args = parser.parse_args()
 args_print(args)
 
-graph = dill.load(open(args.input_dir, 'rb'))
+graph = dill.load(open(args.data_dir, 'rb'))
 
 
 def ogbn_mag_sample(seed, samp_nodes):
