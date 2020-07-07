@@ -10,7 +10,18 @@ This experiment is based on stanford OGB (1.2.1) benchmark. The description of o
     - 'sequential': Run the sampling for each batch of test nodes only once, and get one set of prediction results.
     - 'variance_reduce':   Run the sampling for each batch of test nodes multiple times, and get the average prediction score for them as prediction results.
 
-The **pre-trained model** is [avaiable here](https://drive.google.com/file/d/1867u-kG_3HjyWg7AeU2XaGH-qRt8GZoN/view?usp=sharing).
+The **pre-trained model** is [avaiable here](https://drive.google.com/file/d/1867u-kG_3HjyWg7AeU2XaGH-qRt8GZoN/view?usp=sharing). Detailed hyperparameter is:
+
+
+```
+  --conv_name                      STR     Name of GNN filter (model)                           hgt
+  --n_hid                          INT     Number of hidden dimension                           512
+  --n_heads                        INT     Number of attention head                             8
+  --n_layers                       INT     Number of GNN layers                                 4
+  --prev_norm                      BOOL    Whether to use layer-norm on previous layers.        True
+  --last_norm                      BOOL    Whether to use layer-norm on the last layer.         True
+  --use_RTE                        BOOL    Whether to use RTE                                   True 
+```
 
 Reference performance numbers for the ACM dataset:
 
