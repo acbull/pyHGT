@@ -113,8 +113,6 @@ graph.valid_paper = valid_paper
 graph.test_paper  = test_paper
 graph.years       = years
 
-
-graph = dill.load(open('/datadrive/dataset/OGB_MAG.pk', 'rb'))
 graph.train_mask = np.zeros(len(graph.node_feature['paper']), dtype=bool)
 graph.train_mask[graph.train_paper] = True
 
