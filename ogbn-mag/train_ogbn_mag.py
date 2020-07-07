@@ -70,9 +70,6 @@ parser.add_argument('--clip', type=int, default=1.0,
 args = parser.parse_args()
 args_print(args)
 
-graph = dill.load(open(args.data_dir, 'rb'))
-
-
 def ogbn_mag_sample(seed, samp_nodes):
     np.random.seed(seed)
     ylabel      = torch.LongTensor(graph.y[samp_nodes])
@@ -110,7 +107,8 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
             jobs.append(p)
     return jobs
 
-
+graph = dill.load(open(args.data_dir, 'rb'))
+evaluator = Evaluator(name='ogbn-mag')
 device = torch.device("cuda:%d" % args.cuda)
 gnn = GNN(conv_name = args.conv_name, in_dim = len(graph.node_feature['paper'][0]), \
           n_hid = args.n_hid, n_heads = args.n_heads, n_layers = args.n_layers, dropout = args.dropout,\
