@@ -263,7 +263,7 @@ class DenseHGTConv(MessagePassing):
                 Add skip connection with learnable weight self.skip[t_id]
             '''
             if self.use_norm:
-                trans_out = self.norms[target_type](trans_out + node_inp[idx])
+                trans_out = self.norms[target_type](trans_out)
                 
             '''
                 Step 4: Shared Dense Layer
