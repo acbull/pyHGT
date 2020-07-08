@@ -158,7 +158,7 @@ with torch.no_grad():
                 pool.close()
                 pool.join()
                 pool = mp.Pool(args.n_pool)
-                jobs = prepare_data(pool, is_test = True, s_idx = int(s_idx * args.n_batch), batch_size=args.batch_size)
+                jobs = prepare_data(pool, task_type = 'sequential', s_idx = int(s_idx * args.n_batch), batch_size=args.batch_size)
 
                 for node_feature, node_type, edge_time, edge_index, edge_type, (train_mask, valid_mask, test_mask), ylabel in test_data:
                     ylabel = ylabel[:args.batch_size]
