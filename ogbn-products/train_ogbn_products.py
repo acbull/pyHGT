@@ -27,7 +27,7 @@ parser.add_argument('--data_dir', type=str, default='/datadrive/dataset',
                     help='The address to output the preprocessed graph.')
 parser.add_argument('--data_name', type=str, default='ogbn-products',
                     help='Name of the dataset')
-parser.add_argument('--model_dir', type=int, default='./hgt_4layer',
+parser.add_argument('--model_dir', type=int, default='./hgt_6layer',
                     help='The address for storing the trained models.')
 parser.add_argument('--plot', type=int, action='store_true',
                     help='Whether to plot the loss/acc curve')
@@ -40,13 +40,13 @@ parser.add_argument('--n_hid', type=int, default=256,
                     help='Number of hidden dimension')
 parser.add_argument('--n_heads', type=int, default=4,
                     help='Number of attention head')
-parser.add_argument('--n_layers', type=int, default=4,
+parser.add_argument('--n_layers', type=int, default=6,
                     help='Number of GNN layers')
 parser.add_argument('--dropout', type=int, default=0.2,
                     help='Dropout ratio')
-parser.add_argument('--sample_depth', type=int, default=6,
+parser.add_argument('--sample_depth', type=int, default=7,
                     help='How many numbers to sample the graph')
-parser.add_argument('--sample_width', type=int, default=520,
+parser.add_argument('--sample_width', type=int, default=768,
                     help='How many nodes to be sampled per layer per type')
 parser.add_argument('--prev_norm', help='Whether to add layer-norm on the previous layers', action='store_true')
 parser.add_argument('--last_norm', help='Whether to add layer-norm on the last layers',     action='store_true')
