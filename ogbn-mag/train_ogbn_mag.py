@@ -3,9 +3,8 @@ from tqdm import tqdm
 import sys
 
 from sklearn.metrics import f1_score
-from data import *
-from utils import *
-from model import *
+from pyHGT.data import *
+from pyHGT.model import *
 from warnings import filterwarnings
 filterwarnings("ignore")
 
