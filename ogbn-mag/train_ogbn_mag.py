@@ -22,11 +22,11 @@ parser = argparse.ArgumentParser(description='Training GNN on ogbn-mag benchmark
 
 
 
-parser.add_argument('--data_dir', type=int, default='/datadrive/dataset/OGB_MAG.pk',
+parser.add_argument('--data_dir', type=str, default='/datadrive/dataset/OGB_MAG.pk',
                     help='The address of preprocessed graph.')
-parser.add_argument('--model_dir', type=int, default='./hgt_4layer',
+parser.add_argument('--model_dir', type=str, default='./hgt_4layer',
                     help='The address for storing the trained models.')
-parser.add_argument('--plot', type=int, action='store_true',
+parser.add_argument('--plot', action='store_true',
                     help='Whether to plot the loss/acc curve')
 parser.add_argument('--cuda', type=int, default=0,
                     help='Avaiable GPU ID')
@@ -48,23 +48,6 @@ parser.add_argument('--sample_width', type=int, default=520,
 parser.add_argument('--prev_norm', help='Whether to add layer-norm on the previous layers', action='store_true')
 parser.add_argument('--last_norm', help='Whether to add layer-norm on the last layers',     action='store_true')
 parser.add_argument('--use_RTE',   help='Whether to use RTE',     action='store_true')
-
-'''
-    Optimization arguments
-'''
-parser.add_argument('--optimizer', type=str, default='adamw',
-                    choices=['adamw', 'adam', 'sgd', 'adagrad'],
-                    help='optimizer to use.')
-parser.add_argument('--n_epoch', type=int, default=400,
-                    help='Number of epoch to run')
-parser.add_argument('--n_pool', type=int, default=8,
-                    help='Number of process to sample subgraph')    
-parser.add_argument('--n_batch', type=int, default=32,
-                    help='Number of batch (sampled graphs) for each epoch') 
-parser.add_argument('--batch_size', type=int, default=128,
-                    help='Number of output nodes for training')    
-parser.add_argument('--clip', type=int, default=1.0,
-                    help='Gradient Norm Clipping') 
 
 args = parser.parse_args()
 args_print(args)
