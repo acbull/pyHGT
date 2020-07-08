@@ -63,7 +63,7 @@ args_print(args)
 
 
 
-def ogbn_mag_sample(seed, samp_nodes):
+def ogbn_sample(seed, samp_nodes):
     np.random.seed(seed)
     ylabel      = torch.LongTensor(graph.y[samp_nodes])
     feature, times, edge_list, indxs, _ = sample_subgraph(graph, \
@@ -85,18 +85,18 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
     jobs = []
     if task_type == 'train':
         for batch_id in np.arange(n_batch):
-            p = pool.apply_async(ogbn_mag_sample, args=([randint(), \
+            p = pool.apply_async(ogbn_sample, args=([randint(), \
                             np.random.choice(graph.train_paper, args.batch_size, replace = False)]))
             jobs.append(p)
     elif task_type == 'variance_reduce':
         target_papers = graph.test_paper[s_idx * args.batch_size : (s_idx + 1) * args.batch_size]
         for batch_id in np.arange(n_batch):
-            p = pool.apply_async(ogbn_mag_sample, args=([randint(), target_papers]))
+            p = pool.apply_async(ogbn_sample, args=([randint(), target_papers]))
             jobs.append(p)
     elif task_type == 'sequential':
         for i in np.arange(n_batch):
             target_papers = graph.test_paper[(s_idx + i) * batch_size : (s_idx + i + 1) * batch_size]
-            p = pool.apply_async(ogbn_mag_sample, args=([randint(), target_papers]))
+            p = pool.apply_async(ogbn_sample, args=([randint(), target_papers]))
             jobs.append(p)
     return jobs
 
