@@ -22,9 +22,9 @@ parser = argparse.ArgumentParser(description='Training GNN on ogbn-mag benchmark
 
 
 
-parser.add_argument('--data_dir', type=int, default='/datadrive/dataset/OGB_MAG.pk',
+parser.add_argument('--data_dir', type=sre, default='/datadrive/dataset/OGB_MAG.pk',
                     help='The address of preprocessed graph.')
-parser.add_argument('--model_dir', type=int, default='./hgt_4layer',
+parser.add_argument('--model_dir', type=sre, default='./hgt_4layer',
                     help='The address for storing the trained models.')
 parser.add_argument('--task_type', type=str, default='variance_reduce',
                     help='Whether to use variance_reduce evaluation or sequential evaluation')
@@ -108,7 +108,7 @@ gnn = GNN(conv_name = args.conv_name, in_dim = len(graph.node_feature['paper'][0
           n_hid = args.n_hid, n_heads = args.n_heads, n_layers = args.n_layers, dropout = args.dropout,\
           num_types = len(graph.get_types()), num_relations = len(graph.get_meta_graph()) + 1,\
           prev_norm = args.prev_norm, last_norm = args.last_norm, use_RTE = args.use_RTE)
-classifier = Classifier(args.n_hid, graph.y.max()+1)
+classifier = Classifier(args.n_hid, graph.y.max().item()+1)
 
 model = nn.Sequential(gnn, classifier)
 model.load_state_dict(torch.load(args.model_dir))
