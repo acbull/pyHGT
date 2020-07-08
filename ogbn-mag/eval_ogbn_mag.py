@@ -153,7 +153,7 @@ with torch.no_grad():
         y_true = []
         pool = mp.Pool(args.n_pool)
         jobs = prepare_data(pool, task_type = 'sequential', s_idx = 0, n_batch = args.n_batch, batch_size=args.batch_size)
-        with tqdm(np.arange(len(graph.test_paper) / args.n_batch // args.batch_size + 1), desc='eval') as monitor:
+        with tqdm(np.arange(len(graph.test_paper) / args.n_batch // args.batch_size), desc='eval') as monitor:
             for s_idx in monitor:
                 test_data = [job.get() for job in jobs]
                 pool.close()
