@@ -33,10 +33,6 @@ parser.add_argument('--vr_num', type=int, default=8,
                     help='Whether to use ensemble evaluation or sequential evaluation')
 parser.add_argument('--n_pool', type=int, default=8,
                     help='Number of process to sample subgraph')  
-parser.add_argument('--sample_depth', type=int, default=6,
-                    help='How many layers within a mini-batch subgraph')
-parser.add_argument('--sample_width', type=int, default=520,
-                    help='How many nodes to be sampled per layer per type')
 parser.add_argument('--n_batch', type=int, default=32,
                     help='Number of batch (sampled graphs) for each epoch') 
 parser.add_argument('--batch_size', type=int, default=256,
@@ -66,7 +62,6 @@ parser.add_argument('--use_RTE',   help='Whether to use RTE',     action='store_
 args = parser.parse_args()
 args_print(args)
 
-graph = dill.load(open(args.data_dir, 'rb'))
 
 
 def ogbn_mag_sample(seed, samp_nodes):
@@ -107,6 +102,8 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
     return jobs
 
 
+graph = dill.load(open(args.data_dir, 'rb'))
+evaluator = Evaluator(name='ogbn-mag')
 device = torch.device("cuda:%d" % args.cuda)
 gnn = GNN(conv_name = args.conv_name, in_dim = len(graph.node_feature['paper'][0]), \
           n_hid = args.n_hid, n_heads = args.n_heads, n_layers = args.n_layers, dropout = args.dropout,\
@@ -156,7 +153,7 @@ with torch.no_grad():
         y_true = []
         pool = mp.Pool(args.n_pool)
         jobs = prepare_data(pool, task_type = 'sequential', s_idx = 0, n_batch = args.n_batch, batch_size=args.batch_size)
-        with tqdm(np.arange(len(graph.test_paper) // args.batch_size), desc='eval') as monitor:
+        with tqdm(np.arange(len(graph.test_paper) / args.n_batch // args.batch_size + 1), desc='eval') as monitor:
             for s_idx in monitor:
                 test_data = [job.get() for job in jobs]
                 pool.close()
