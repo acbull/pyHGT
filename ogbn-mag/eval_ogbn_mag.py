@@ -85,7 +85,7 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
     jobs = []
     if task_type == 'train':
         for batch_id in np.arange(n_batch):
-            p = pool.apply_async(node_classification_sample, args=([randint(), \
+            p = pool.apply_async(ogbn_mag_sample, args=([randint(), \
                             np.random.choice(graph.train_paper, args.batch_size, replace = False)]))
             jobs.append(p)
     elif task_type == 'variance_reduce':
