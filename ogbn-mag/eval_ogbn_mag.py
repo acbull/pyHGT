@@ -100,6 +100,8 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
             jobs.append(p)
     return jobs
 
+np.random.seed(43)
+np.random.shuffle(graph.test_paper)
 
 graph = dill.load(open(args.data_dir, 'rb'))
 evaluator = Evaluator(name='ogbn-mag')
