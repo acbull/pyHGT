@@ -24,7 +24,7 @@ The **pre-trained model** is [avaiable here](https://drive.google.com/file/d/1K5
   --use_RTE                        BOOL    Whether to use RTE                                   False 
 ```
 
-Reference performance numbers for the ACM dataset:
+Reference performance numbers for the ogbn-products dataset:
 
 | Model        | Accuracy (Seq)   | # Parameter     | Hardware         |
 | ---------    | ---------------  | --------------  |--------------    |
