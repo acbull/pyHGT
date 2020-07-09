@@ -23,11 +23,11 @@ parser = argparse.ArgumentParser(description='Training GNN on ogbn-mag benchmark
 
 
 
-parser.add_argument('--data_dir', type=str, default='/datadrive/dataset',
+parser.add_argument('--data_dir', type=str, default='./',
                     help='The address to output the preprocessed graph.')
 parser.add_argument('--data_name', type=str, default='ogbn-products',
                     help='Name of the dataset')
-parser.add_argument('--model_dir', type=int, default='./hgt_4layer',
+parser.add_argument('--model_dir', type=int, default='./hello',
                     help='The address for storing the trained models.')
 parser.add_argument('--task_type', type=str, default='variance_reduce',
                     help='Whether to use variance_reduce evaluation or sequential evaluation')
@@ -37,9 +37,10 @@ parser.add_argument('--n_pool', type=int, default=8,
                     help='Number of process to sample subgraph')  
 parser.add_argument('--n_batch', type=int, default=32,
                     help='Number of batch (sampled graphs) for each epoch') 
-parser.add_argument('--batch_size', type=int, default=128,
+parser.add_argument('--batch_size', type=int, default=256,
                     help='Number of output nodes for training')   
-
+parser.add_argument('--cuda', type=int, default=0,
+                    help='Number of output nodes for training') 
 
 
 parser.add_argument('--conv_name', type=str, default='hgt',
@@ -53,9 +54,9 @@ parser.add_argument('--n_layers', type=int, default=6,
                     help='Number of GNN layers')
 parser.add_argument('--dropout', type=int, default=0.2,
                     help='Dropout ratio')
-parser.add_argument('--sample_depth', type=int, default=7,
+parser.add_argument('--sample_depth', type=int, default=6,
                     help='How many numbers to sample the graph')
-parser.add_argument('--sample_width', type=int, default=768,
+parser.add_argument('--sample_width', type=int, default=2048,
                     help='How many nodes to be sampled per layer per type')
 parser.add_argument('--prev_norm', help='Whether to add layer-norm on the previous layers', action='store_true')
 parser.add_argument('--last_norm', help='Whether to add layer-norm on the last layers',     action='store_true')
@@ -66,40 +67,77 @@ args_print(args)
 
 
 
-def ogbn_mag_sample(seed, samp_nodes):
+def feature_products(layer_data, graph):
+    feature = {}
+    times   = {}
+    indxs   = {}
+    texts   = []
+    for _type in layer_data:
+        if len(layer_data[_type]) == 0:
+            continue
+        idxs  = np.array(list(layer_data[_type].keys()), dtype = np.int)
+        tims  = np.array(list(layer_data[_type].values()))[:,1]
+        if _type == 'cate':
+            feature[_type] = np.zeros([len(idxs), len(graph.node_feature['product'][0])])
+            feature[_type][:,0] = idxs
+        else:
+            feature[_type] = graph.node_feature[_type][idxs]
+        times[_type]   = tims
+        indxs[_type]   = idxs
+        
+    return feature, times, indxs, texts
+
+def node_classification_sample(seed, samp_nodes):
+    '''
+        sub-graph sampling and label preparation for node classification:
+        (1) Sample batch_size number of output nodes (papers), get their time.
+    '''
     np.random.seed(seed)
-    ylabel      = torch.LongTensor(graph.y[samp_nodes])
-    feature, times, edge_list, indxs, _ = sample_subgraph(graph, \
-                inp = {'paper': np.concatenate([samp_nodes, graph.years[samp_nodes]]).reshape(2, -1).transpose()}, \
+    feature, times, edge_list, _, _ = sample_subgraph(graph, \
+                inp = {'product': np.concatenate([samp_nodes, np.ones(len(samp_nodes))]).reshape(2, -1).transpose()}, \
                 sampled_depth = args.sample_depth, sampled_number = args.sample_width, \
-                    feature_extractor = feature_MAG)
+                    feature_extractor = feature_products)
+
+    masked_edge_list = []
+    for i in edge_list['product']['cate']['belong']:
+        if i[0] >= args.batch_size:
+            masked_edge_list += [i]
+    edge_list['product']['cate']['belong'] = masked_edge_list
+
+    masked_edge_list = []
+    for i in edge_list['cate']['product']['rev_belong']:
+        if i[1] >= args.batch_size:
+            masked_edge_list += [i]
+    edge_list['cate']['product']['rev_belong'] = masked_edge_list
+
     node_feature, node_type, edge_time, edge_index, edge_type, node_dict, edge_dict = \
             to_torch(feature, times, edge_list, graph)
-    train_mask = graph.train_mask[indxs['paper']]
-    valid_mask = graph.valid_mask[indxs['paper']]
-    test_mask  = graph.test_mask[indxs['paper']]
-    ylabel     = graph.y[indxs['paper']]
-    return node_feature, node_type, edge_time, edge_index, edge_type, (train_mask, valid_mask, test_mask), ylabel
     
-def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, batch_size = args.batch_size):
+    ylabel = torch.LongTensor(graph.y[samp_nodes])
+    x_ids = np.arange(args.batch_size)
+    return node_feature, node_type, edge_time, edge_index, edge_type, x_ids, ylabel
+    
+def prepare_data(pool, task_type = 'train', s_idx=0, n_batch = args.n_batch, batch_size = args.batch_size):
     '''
         Sampled and prepare training and validation data using multi-process parallization.
     '''
     jobs = []
     if task_type == 'train':
-        for batch_id in np.arange(n_batch):
-            p = pool.apply_async(node_classification_sample, args=([randint(), \
-                            np.random.choice(graph.train_paper, args.batch_size, replace = False)]))
+        for batch_id in np.arange(args.n_batch):
+            p = pool.apply_async(node_classification_sample, args=(randint(), \
+                np.random.choice(graph.train_paper, args.batch_size, replace = False)))
             jobs.append(p)
-    elif task_type == 'variance_reduce':
-        target_papers = graph.test_paper[s_idx * args.batch_size : (s_idx + 1) * args.batch_size]
-        for batch_id in np.arange(n_batch):
-            p = pool.apply_async(node_classification_sample, args=([randint(), target_papers]))
-            jobs.append(p)
+        p = pool.apply_async(node_classification_sample, args=(randint(), \
+               np.random.choice(graph.valid_paper, args.batch_size, replace = False)))
+        jobs.append(p)
+
+        p = pool.apply_async(node_classification_sample, args=(randint(), \
+               np.random.choice(graph.test_paper, args.batch_size, replace = False)))
+        jobs.append(p)
     elif task_type == 'sequential':
         for i in np.arange(n_batch):
             target_papers = graph.test_paper[(s_idx + i) * batch_size : (s_idx + i + 1) * batch_size]
-            p = pool.apply_async(node_classification_sample, args=([randint(), target_papers]))
+            p = pool.apply_async(node_classification_sample, args=(randint(), target_papers))
             jobs.append(p)
     return jobs
 
@@ -107,17 +145,11 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
 graph = dill.load(open('%s/%s.pk' % (args.data_dir, args.data_name), 'rb'))
 evaluator = Evaluator(name=args.data_name)
 device = torch.device("cuda:%d" % args.cuda)
-gnn = GNN(conv_name = args.conv_name, in_dim = len(graph.node_feature['paper'][0]), \
-          n_hid = args.n_hid, n_heads = args.n_heads, n_layers = args.n_layers, dropout = args.dropout,\
-          num_types = len(graph.get_types()), num_relations = len(graph.get_meta_graph()) + 1,\
-          prev_norm = args.prev_norm, last_norm = args.last_norm, use_RTE = args.use_RTE)
-classifier = Classifier(args.n_hid, graph.y.max()+1)
-
-model = nn.Sequential(gnn, classifier)
-model.load_state_dict(torch.load(args.model_dir))
+model = torch.load(args.model_dir)
 model.to(device)
 print('Model #Params: %d' % get_n_params(model))
 criterion = nn.NLLLoss()
+gnn, classifier = model[0], model[1]
 
 model.eval()
 with torch.no_grad():
@@ -145,7 +177,7 @@ with torch.no_grad():
                 y_true += list(ylabel[:args.batch_size])
 
                 test_acc = evaluator.eval({
-                        'y_true': torch.LongTensor(y_true),
+                        'y_true': torch.LongTensor(y_true).unsqueeze(-1),
                         'y_pred': torch.LongTensor(y_pred).unsqueeze(-1)
                     })['acc']
                 monitor.set_postfix(accuracy = test_acc)
@@ -154,16 +186,16 @@ with torch.no_grad():
         y_pred = []
         y_true = []
         pool = mp.Pool(args.n_pool)
-        jobs = prepare_data(pool, task_type = 'sequential', s_idx = 0, n_batch = args.n_batch, batch_size=args.batch_size)
+        jobs = prepare_data(pool, task_type = 'sequential', s_idx = 0)
         with tqdm(np.arange(len(graph.test_paper) / args.n_batch // args.batch_size), desc='eval') as monitor:
             for s_idx in monitor:
                 test_data = [job.get() for job in jobs]
                 pool.close()
                 pool.join()
                 pool = mp.Pool(args.n_pool)
-                jobs = prepare_data(pool, is_test = True, s_idx = int(s_idx * args.n_batch), batch_size=args.batch_size)
+                jobs = prepare_data(pool, task_type = 'sequential', s_idx = int(s_idx * args.n_batch))
 
-                for node_feature, node_type, edge_time, edge_index, edge_type, (train_mask, valid_mask, test_mask), ylabel in test_data:
+                for node_feature, node_type, edge_time, edge_index, edge_type, x_ids, ylabel in test_data:
                     ylabel = ylabel[:args.batch_size]
                     node_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
                                                    edge_time.to(device), edge_index.to(device), edge_type.to(device))
@@ -178,3 +210,6 @@ with torch.no_grad():
                                 'y_pred': torch.FloatTensor(y_pred).unsqueeze(-1)
                             })['acc']
                 monitor.set_postfix(accuracy = test_acc)
+    elif args.task_type == 'full_batch':
+        pass
+#         node_feature, node_type, edge_time, edge_index, edge_type, x_ids, ylabel
