@@ -5,7 +5,8 @@ This experiment is based on stanford OGB (1.2.1) benchmark. The description of o
  
  1. run ```python preprocess_ogbn_products.py``` to turn the dataset into our own data structure. As the MAG dataset only have input attributes (features) for paper nodes, for all the other types of nodes (author, affiliation, topic), we simply take the average of their connected paper nodes as their input features.
  
-    **Note**: Original products graph is not heterogeneous. To leverage the label information of training and valid data (as observed nodes) as soft label propagation, we add a type of nodes called "cate" (as they don't have attributes, the input features are replaced with learnable embedding). To avoid information leakage, we didn't add back these nodes for test data. Within each mini-batch training, we'll delete the edges from these "cate" nodes to output nodes. This trick significantly reduce the generarzation gap between the training and test nodes.
+    **Note**: Original products graph is not heterogeneous. To leverage the label information of training and valid data (as observed nodes) as soft label propagation, we add a type of nodes called "cate" (as they don't have attributes, the input features are replaced with learnable embedding). 
+    *To avoid information leakage*, we didn't add back these nodes for test data. Within each mini-batch training, we'll delete the edges from these "cate" nodes to output nodes. This trick significantly reduce the generarzation gap between the training and test nodes.
 
 
   2. train the model by ```python train_ogbn_products.py --data_dir PATH_OF_DATASET --model_dir PATH_OF_SAVED_MODEL --n_layers 4 --prev_norm  --last_norm```. Remember to specify your own data and model path.
