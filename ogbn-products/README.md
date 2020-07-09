@@ -8,3 +8,22 @@ This experiment is based on stanford OGB (1.2.1) benchmark. The description of o
   2. train the model by ```python train_ogbn_products.py --data_dir PATH_OF_DATASET --model_dir PATH_OF_SAVED_MODEL --n_layers 4 --prev_norm  --last_norm```. Remember to specify your own data and model path.
 
   3. evaluate the model by ```python eval_ogbn_products.py --data_dir PATH_OF_DATASET --model_dir PATH_OF_SAVED_MODEL --task_type sequential```. 
+
+The **pre-trained model** is [avaiable here](https://drive.google.com/file/d/1K5blZmIVOBDZk40_CJcnNgRp1TJ__1ka/view?usp=sharing). Detailed hyperparameter is:
+
+
+```
+  --conv_name                      STR     Name of GNN filter (model)                           hgt
+  --n_hid                          INT     Number of hidden dimension                           256
+  --n_heads                        INT     Number of attention head                             4
+  --n_layers                       INT     Number of GNN layers                                 3
+  --prev_norm                      BOOL    Whether to use layer-norm on previous layers.        True
+  --last_norm                      BOOL    Whether to use layer-norm on the last layer.         True
+  --use_RTE                        BOOL    Whether to use RTE                                   False 
+```
+
+Reference performance numbers for the ACM dataset:
+
+| Model        | Accuracy (Seq)   | # Parameter     | Hardware         |
+| ---------    | ---------------  | --------------  |--------------    |
+| 3-layer HGT  | 0.8563           | 2,025,573       | Tesla K80 (12GB) |
