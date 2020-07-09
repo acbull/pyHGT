@@ -52,9 +52,8 @@ elist = graph.edge_list['product']['cate']['belong']
 rlist = graph.edge_list['cate']['product']['rev_belong']
 
 for s_id, t_id in enumerate(y):
-    if not graph.test_mask[s_id]:
-        elist[s_id][t_id] = 1
-        rlist[t_id][s_id] = 1
+    elist[s_id][t_id] = 1
+    rlist[t_id][s_id] = 1
         
         
 edg = {}
