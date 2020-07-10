@@ -1,6 +1,6 @@
 # Heterogeneous Graph Transformer (HGT)
 
-**UPDATE**: HGT is the current SOTA result on the [*Stanford OGBN-MAG, OGBN-Products dataset*](https://ogb.stanford.edu/docs/leader_nodeprop/). The codes are also avaiable in this repo.
+**UPDATE**: HGT is the current SOTA result on the [*Stanford OGBN-MAG dataset*](https://ogb.stanford.edu/docs/leader_nodeprop/). The codes are also avaiable in this repo.
 
 [Alternative reference Deep Graph Library (DGL) implementation](https://github.com/acbull/HGT-DGL)
 
