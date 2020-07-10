@@ -2,7 +2,7 @@
 
 **UPDATE**: HGT is the current SOTA result on the [*Stanford OGBN-MAG dataset*](https://ogb.stanford.edu/docs/leader_nodeprop/). The codes are also avaiable in this repo.
 
-[Alternative reference Deep Graph Library (DGL) implementation](https://github.com/acbull/HGT-DGL)
+[Alternative reference Deep Graph Library (DGL) implementation](https://github.com/dmlc/dgl/tree/master/examples/pytorch/hgt)
 
 Heterogeneous Graph Transformer is a graph neural network architecture that can deal with large-scale heterogeneous and dynamic graphs.
 
