@@ -52,7 +52,7 @@ class Matcher(nn.Module):
 
         
 class GNN(nn.Module):
-    def __init__(self, in_dim, n_hid, num_types, num_relations, n_heads, n_layers, dropout = 0.2, conv_name = 'hgt', prev_norm = False, last_norm = False, use_RTE = True):
+    def __init__(self, in_dim, n_hid, num_types, num_relations, n_heads, n_layers, dropout = 0.2, conv_name = 'hgt', prev_norm = True, last_norm = True, use_RTE = True):
         super(GNN, self).__init__()
         self.gcs = nn.ModuleList()
         self.num_types = num_types
