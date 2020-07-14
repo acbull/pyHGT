@@ -257,3 +257,15 @@ def to_torch(feature, time, edge_list, graph):
     edge_type    = torch.LongTensor(edge_type)
     return node_feature, node_type, edge_time, edge_index, edge_type, node_dict, edge_dict
     
+
+    
+class RenameUnpickler(dill.Unpickler):
+    def find_class(self, module, name):
+        renamed_module = module
+        if module == "GPT_GNN.data" or module == 'data':
+            renamed_module = "pyHGT.data"
+        return super(RenameUnpickler, self).find_class(renamed_module, name)
+
+
+def renamed_load(file_obj):
+    return RenameUnpickler(file_obj).load()
