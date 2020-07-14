@@ -1,6 +1,6 @@
 import sys
-from .data import *
-from .model import *
+from pyHGT.data import *
+from pyHGT.model import *
 from warnings import filterwarnings
 filterwarnings("ignore")
 
