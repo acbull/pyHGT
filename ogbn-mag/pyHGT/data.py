@@ -84,7 +84,7 @@ class Graph():
 
 
 
-def sample_subgraph(graph, max_time = None, sampled_depth = 2, sampled_number = 8, inp = None, feature_extractor = feature_OAG):
+def sample_subgraph(graph, time_range, sampled_depth = 2, sampled_number = 8, inp = None, feature_extractor = feature_OAG):
     '''
         Sample Sub-Graph based on the connection of other nodes with currently sampled nodes
         We maintain budgets for each node type, indexed by <node_id, time>.
@@ -109,7 +109,7 @@ def sample_subgraph(graph, max_time = None, sampled_depth = 2, sampled_number = 
         Note that there exist some nodes that have many neighborhoods
         (such as fields, venues), for those case, we only consider 
     '''
-    def add_budget(te, target_id, target_time, layer_data, budget, depth):
+    def add_budget(te, target_id, target_time, layer_data, budget):
         for source_type in te:
             tes = te[source_type]
             for relation_type in tes:
@@ -124,12 +124,12 @@ def sample_subgraph(graph, max_time = None, sampled_depth = 2, sampled_number = 
                     source_time = adl[source_id]
                     if source_time == None:
                         source_time = target_time
-                    if source_id in layer_data[source_type]:
+                    if source_time > np.max(list(time_range.keys())) or source_id in layer_data[source_type]:
                         continue
-                    if max_time is not None and source_time > max_time:
-                        continue
-                    budget[source_type][source_id][0] += depth / len(sampled_ids)
+                    budget[source_type][source_id][0] += 1. / len(sampled_ids)
                     budget[source_type][source_id][1] = source_time
+
+ 
 
     '''
         First adding the sampled nodes then updating budget.
@@ -140,13 +140,13 @@ def sample_subgraph(graph, max_time = None, sampled_depth = 2, sampled_number = 
     for _type in inp:
         te = graph.edge_list[_type]
         for _id, _time in inp[_type]:
-            add_budget(te, _id, _time, layer_data, budget, sampled_depth + 1)
+            add_budget(te, _id, _time, layer_data, budget)
     '''
         We recursively expand the sampled graph by sampled_depth.
         Each time we sample a fixed number of nodes for each budget,
         based on the accumulated degree.
     '''
-    for layer in np.arange(sampled_depth):
+    for layer in range(sampled_depth):
         sts = list(budget.keys())
         for source_type in sts:
             te = graph.edge_list[source_type]
@@ -170,7 +170,7 @@ def sample_subgraph(graph, max_time = None, sampled_depth = 2, sampled_number = 
             for k in sampled_keys:
                 layer_data[source_type][k] = [len(layer_data[source_type]), budget[source_type][k][1]]
             for k in sampled_keys:
-                add_budget(te, k, budget[source_type][k][1], layer_data, budget, sampled_depth - layer)
+                add_budget(te, k, budget[source_type][k][1], layer_data, budget)
                 budget[source_type].pop(k)   
     '''
         Prepare feature, time and adjacency matrix for the sampled graph
