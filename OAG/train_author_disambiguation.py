@@ -68,7 +68,7 @@ if args.cuda != -1:
     device = torch.device("cuda:" + str(args.cuda))
 else:
     device = torch.device("cpu")
-graph = dill.load(open(args.data_dir + '/graph%s.pk' % args.domain, 'rb'))
+graph = renamed_load(open(args.data_dir + '/graph%s.pk' % args.domain, 'rb'))
 
 train_range = {t: True for t in graph.times if t != None and t < 2015}
 valid_range = {t: True for t in graph.times if t != None and t >= 2015  and t <= 2016}
