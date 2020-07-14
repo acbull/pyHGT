@@ -1,4 +1,4 @@
-from pytorch_transformers import *
+from transformers import *
 
 from data import *
 import gensim
