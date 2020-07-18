@@ -45,6 +45,17 @@ parser.add_argument('--sample_depth', type=int, default=6,
                     help='How many numbers to sample the graph')
 parser.add_argument('--sample_width', type=int, default=520,
                     help='How many nodes to be sampled per layer per type')
+
+parser.add_argument('--n_epoch', type=int, default=100,
+                    help='Number of epoch to run')
+parser.add_argument('--n_pool', type=int, default=8,
+                    help='Number of process to sample subgraph')    
+parser.add_argument('--n_batch', type=int, default=32,
+                    help='Number of batch (sampled graphs) for each epoch') 
+parser.add_argument('--batch_size', type=int, default=128,
+                    help='Number of output nodes for training')  
+
+
 parser.add_argument('--prev_norm', help='Whether to add layer-norm on the previous layers', action='store_true')
 parser.add_argument('--last_norm', help='Whether to add layer-norm on the last layers',     action='store_true')
 parser.add_argument('--use_RTE',   help='Whether to use RTE',     action='store_true')
