@@ -54,7 +54,8 @@ parser.add_argument('--n_batch', type=int, default=32,
                     help='Number of batch (sampled graphs) for each epoch') 
 parser.add_argument('--batch_size', type=int, default=128,
                     help='Number of output nodes for training')  
-
+parser.add_argument('--clip', type=int, default=1.0,
+                    help='Gradient Norm Clipping') 
 
 parser.add_argument('--prev_norm', help='Whether to add layer-norm on the previous layers', action='store_true')
 parser.add_argument('--last_norm', help='Whether to add layer-norm on the last layers',     action='store_true')
@@ -86,7 +87,7 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
     if task_type == 'train':
         for batch_id in np.arange(n_batch):
             p = pool.apply_async(ogbn_sample, args=([randint(), \
-                            np.random.choice(graph.train_paper, args.batch_size, replace = False)]))
+                            np.random.choice(target_nodes, args.batch_size, replace = False)]))
             jobs.append(p)
     elif task_type == 'sequential':
         for i in np.arange(n_batch):
@@ -101,6 +102,7 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
     return jobs
 
 graph = dill.load(open(args.data_dir, 'rb'))
+target_nodes = np.arange(len(graph.node_feature['paper']))
 evaluator = Evaluator(name='ogbn-mag')
 device = torch.device("cuda:%d" % args.cuda)
 gnn = GNN(conv_name = args.conv_name, in_dim = len(graph.node_feature['paper'][0]), \
