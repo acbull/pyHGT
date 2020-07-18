@@ -87,7 +87,7 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
     if task_type == 'train':
         for batch_id in np.arange(n_batch):
             p = pool.apply_async(ogbn_sample, args=([randint(), \
-                            np.random.choice(graph.train_paper, args.batch_size, replace = False)]))
+                            np.random.choice(target_nodes, args.batch_size, replace = False)]))
             jobs.append(p)
     elif task_type == 'sequential':
         for i in np.arange(n_batch):
@@ -104,6 +104,7 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
 graph = dill.load(open(args.data_dir, 'rb'))
 evaluator = Evaluator(name='ogbn-mag')
 device = torch.device("cuda:%d" % args.cuda)
+target_nodes = np.arange(len(graph.node_feature['paper']))
 gnn = GNN(conv_name = args.conv_name, in_dim = len(graph.node_feature['paper'][0]), \
           n_hid = args.n_hid, n_heads = args.n_heads, n_layers = args.n_layers, dropout = args.dropout,\
           num_types = len(graph.get_types()), num_relations = len(graph.get_meta_graph()) + 1,\
