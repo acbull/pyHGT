@@ -84,7 +84,7 @@ class Graph():
 
 
 
-def sample_subgraph(graph, time_range, sampled_depth = 2, sampled_number = 8, inp = None, feature_extractor = feature_OAG):
+def sample_subgraph(graph, sampled_depth = 2, sampled_number = 8, inp = None, feature_extractor = feature_OAG):
     '''
         Sample Sub-Graph based on the connection of other nodes with currently sampled nodes
         We maintain budgets for each node type, indexed by <node_id, time>.
@@ -124,7 +124,7 @@ def sample_subgraph(graph, time_range, sampled_depth = 2, sampled_number = 8, in
                     source_time = adl[source_id]
                     if source_time == None:
                         source_time = target_time
-                    if source_time > np.max(list(time_range.keys())) or source_id in layer_data[source_type]:
+                    if source_id in layer_data[source_type]:
                         continue
                     budget[source_type][source_id][0] += 1. / len(sampled_ids)
                     budget[source_type][source_id][1] = source_time
