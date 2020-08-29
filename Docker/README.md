@@ -2,10 +2,9 @@
 You can run this project inside a docker image.
 Steps to run this code in a docker container
 # Installation
-Go to this folder
-
+Go to the project directory
 ## 1. Build docker container
-```$ docker build -t "pyhgt:latest"```
+```$ docker build -t "pyhgt:latest" -f ./Docker/DockerFile .```
 
 ## 2. After the successfull build, run the container
 
