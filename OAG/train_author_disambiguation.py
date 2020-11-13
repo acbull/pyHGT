@@ -33,7 +33,7 @@ parser.add_argument('--n_heads', type=int, default=8,
                     help='Number of attention head')
 parser.add_argument('--n_layers', type=int, default=3,
                     help='Number of GNN layers')
-parser.add_argument('--dropout', type=int, default=0.2,
+parser.add_argument('--dropout', type=float, default=0.2,
                     help='Dropout ratio')
 parser.add_argument('--sample_depth', type=int, default=6,
                     help='How many numbers to sample the graph')
@@ -46,7 +46,7 @@ parser.add_argument('--sample_width', type=int, default=128,
 parser.add_argument('--optimizer', type=str, default='adamw',
                     choices=['adamw', 'adam', 'sgd', 'adagrad'],
                     help='optimizer to use.')
-parser.add_argument('--data_percentage', type=int, default=1.0,
+parser.add_argument('--data_percentage', type=float, default=1.0,
                     help='Percentage of training and validation data to use')
 parser.add_argument('--n_epoch', type=int, default=100,
                     help='Number of epoch to run')
@@ -58,7 +58,7 @@ parser.add_argument('--repeat', type=int, default=2,
                     help='How many time to train over a singe batch (reuse data)') 
 parser.add_argument('--batch_size', type=int, default=256,
                     help='Number of output nodes for training')    
-parser.add_argument('--clip', type=int, default=0.25,
+parser.add_argument('--clip', type=float, default=0.25,
                     help='Gradient Norm Clipping') 
 
 
