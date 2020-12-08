@@ -34,7 +34,7 @@ parser.add_argument('--n_pool', type=int, default=8,
                     help='Number of process to sample subgraph')  
 parser.add_argument('--n_batch', type=int, default=32,
                     help='Number of batch (sampled graphs) for each epoch') 
-parser.add_argument('--batch_size', type=int, default=256,
+parser.add_argument('--batch_size', type=int, default=128,
                     help='Number of output nodes for training')   
 
 
@@ -48,6 +48,8 @@ parser.add_argument('--n_heads', type=int, default=8,
                     help='Number of attention head')
 parser.add_argument('--n_layers', type=int, default=4,
                     help='Number of GNN layers')
+parser.add_argument('--cuda', type=int, default=2,
+                    help='cuda')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='Dropout ratio')
 parser.add_argument('--sample_depth', type=int, default=6,
