@@ -69,19 +69,19 @@ Please consider citing the following paper when using our code for your applicat
 
 ```bibtex
 @inproceedings{hgt,
-  author = {Hu, Ziniu and Dong, Yuxiao and Wang, Kuansan and Sun, Yizhou},
-  title = {Heterogeneous Graph Transformer},
-  year = {2020},
-  isbn = {9781450370233},
-  publisher = {Association for Computing Machinery},
-  address = {New York, NY, USA},
-  url = {https://doi.org/10.1145/3366423.3380027},
-  doi = {10.1145/3366423.3380027},
-  booktitle = {Proceedings of The Web Conference 2020},
-  pages = {2704–2710},
-  numpages = {7},
-  keywords = {Graph Embedding, Graph Neural Networks, Graph Attention, Representation Learning, Heterogeneous Information Networks},
-  location = {Taipei, Taiwan},
-  series = {WWW '20}
+  author    = {Ziniu Hu and
+               Yuxiao Dong and
+               Kuansan Wang and
+               Yizhou Sun},
+  title     = {Heterogeneous Graph Transformer},
+  booktitle = {{WWW} '20: The Web Conference 2020, Taipei, Taiwan, April 20-24, 2020},
+  pages     = {2704--2710},
+  publisher = {{ACM} / {IW3C2}},
+  year      = {2020},
+  url       = {https://doi.org/10.1145/3366423.3380027},
+  doi       = {10.1145/3366423.3380027},
+  timestamp = {Wed, 06 May 2020 12:56:16 +0200},
+  biburl    = {https://dblp.org/rec/conf/www/HuDWS20.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 ```
