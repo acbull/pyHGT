@@ -10,7 +10,7 @@ import math
 
 class HGTConv(MessagePassing):
     def __init__(self, in_dim, out_dim, num_types, num_relations, n_heads, dropout = 0.2, use_norm = True, use_RTE = True, **kwargs):
-        super(HGTConv, self).__init__(aggr='add', **kwargs)
+        super(HGTConv, self).__init__(node_dim=0, aggr='add', **kwargs)
 
         self.in_dim        = in_dim
         self.out_dim       = out_dim
@@ -142,7 +142,7 @@ class HGTConv(MessagePassing):
     
 class DenseHGTConv(MessagePassing):
     def __init__(self, in_dim, out_dim, num_types, num_relations, n_heads, dropout = 0.2, use_norm = True, use_RTE = True, **kwargs):
-        super(DenseHGTConv, self).__init__(aggr='add', **kwargs)
+        super(DenseHGTConv, self).__init__(node_dim=0, aggr='add', **kwargs)
 
         self.in_dim        = in_dim
         self.out_dim       = out_dim
