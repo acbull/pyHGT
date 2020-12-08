@@ -47,7 +47,7 @@ If you want to directly process from raw data, you can download via this [link](
 
 
 
-You can also use our code to process other heteogeneous graph, as long as you load them into our data structure `class Graph` in data.py. Refer to preprocess_OAG.py for a demonstration.
+You can also use our code to process other heterogeneous graph, as long as you load them into our data structure `class Graph` in data.py. Refer to preprocess_OAG.py for a demonstration.
 
 ## Usage
 Execute the following scripts to train on paper-field (L2) classification task using HGT:
@@ -69,9 +69,19 @@ Please consider citing the following paper when using our code for your applicat
 
 ```bibtex
 @inproceedings{hgt,
-  title={Heterogeneous Graph Transformer},
-  author={Ziniu Hu and Yuxiao Dong and Kuansan Wang and Yizhou Sun},
-  booktitle={Proceedings of the 2020 World Wide Web Conference},
-  year={2020}
+  author = {Hu, Ziniu and Dong, Yuxiao and Wang, Kuansan and Sun, Yizhou},
+  title = {Heterogeneous Graph Transformer},
+  year = {2020},
+  isbn = {9781450370233},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  url = {https://doi.org/10.1145/3366423.3380027},
+  doi = {10.1145/3366423.3380027},
+  booktitle = {Proceedings of The Web Conference 2020},
+  pages = {2704–2710},
+  numpages = {7},
+  keywords = {Graph Embedding, Graph Neural Networks, Graph Attention, Representation Learning, Heterogeneous Information Networks},
+  location = {Taipei, Taiwan},
+  series = {WWW '20}
 }
 ```
