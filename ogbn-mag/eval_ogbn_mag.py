@@ -105,7 +105,7 @@ def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, b
 graph = dill.load(open(args.data_dir, 'rb'))
 np.random.seed(43)
 np.random.shuffle(graph.test_paper)
-
+y_preds = {pi : np.zeros(graph.y.max().item()+1) for pi in graph.test_paper}
 
 evaluator = Evaluator(name='ogbn-mag')
 device = torch.device("cuda:%d" % args.cuda)
@@ -128,7 +128,7 @@ with torch.no_grad():
         y_true = []
         pool = mp.Pool(args.n_pool)
         jobs = prepare_data(pool, task_type = 'variance_reduce', s_idx = 0, n_batch = args.vr_num)
-        with tqdm(np.arange(len(graph.test_paper) // args.batch_size), desc='eval') as monitor:
+        with tqdm(np.arange(len(graph.test_paper) // args.batch_size + 1) + 1, desc='eval') as monitor:
             for s_idx in monitor:
                 ress = []
                 test_data = [job.get() for job in jobs]
@@ -137,11 +137,15 @@ with torch.no_grad():
                 pool = mp.Pool(args.n_pool)
                 jobs = prepare_data(pool, task_type = 'variance_reduce', s_idx = s_idx, n_batch = args.vr_num)
 
-                for node_feature, node_type, edge_time, edge_index, edge_type, (train_mask, valid_mask, test_mask), ylabel in test_data:
+                for node_feature, node_type, edge_time, edge_index, edge_type, (train_mask, valid_mask, test_mask), ylabel, yindxs in test_data:
                     node_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
                                                    edge_time.to(device), edge_index.to(device), edge_type.to(device))
                     res  = classifier.forward(node_rep[:args.batch_size])
                     ress += [res]
+                    
+                    res  = classifier.forward(node_rep[:len(ylabel)][test_mask])
+                    for pi, r in zip(yindxs, res.tolist()):
+                        y_preds[pi] += r
 
                 y_pred += torch.stack(ress).mean(dim=0).argmax(dim=1).tolist()
                 y_true += list(ylabel[:args.batch_size])
@@ -152,12 +156,12 @@ with torch.no_grad():
                     })['acc']
                 monitor.set_postfix(accuracy = test_acc)
                 
+                
+                
     elif args.task_type == 'sequential':
-        y_pred = []
-        y_true = []
         pool = mp.Pool(args.n_pool)
         jobs = prepare_data(pool, task_type = 'sequential', s_idx = 0, n_batch = args.n_batch, batch_size=args.batch_size)
-        with tqdm(np.arange(len(graph.test_paper) / args.n_batch // args.batch_size), desc='eval') as monitor:
+        with tqdm(np.arange(len(graph.test_paper) // (args.batch_size * args.n_batch) + 1) + 1, desc='eval') as monitor:
             for s_idx in monitor:
                 test_data = [job.get() for job in jobs]
                 pool.close()
@@ -165,18 +169,21 @@ with torch.no_grad():
                 pool = mp.Pool(args.n_pool)
                 jobs = prepare_data(pool, task_type = 'sequential', s_idx = int(s_idx * args.n_batch), batch_size=args.batch_size)
 
-                for node_feature, node_type, edge_time, edge_index, edge_type, (train_mask, valid_mask, test_mask), ylabel in test_data:
-                    ylabel = ylabel[:args.batch_size]
+                for node_feature, node_type, edge_time, edge_index, edge_type, (train_mask, valid_mask, test_mask), ylabel, yindxs in test_data:
                     node_rep = gnn.forward(node_feature.to(device), node_type.to(device), \
                                                    edge_time.to(device), edge_index.to(device), edge_type.to(device))
-                    res  = classifier.forward(node_rep[:args.batch_size])
-                    pred  = res.argmax(dim=1)
-                    
-                    y_pred += pred.tolist()
-                    y_true += ylabel.tolist()
-                    
-                test_acc = evaluator.eval({
-                                'y_true': torch.FloatTensor(y_true).unsqueeze(-1),
-                                'y_pred': torch.FloatTensor(y_pred).unsqueeze(-1)
-                            })['acc']
-                monitor.set_postfix(accuracy = test_acc)
+                    res  = classifier.forward(node_rep[:len(ylabel)][test_mask])
+                    for pi, r in zip(yindxs, res.tolist()):
+                        y_preds[pi] += r
+                        
+                        
+y_pred = []
+y_true = []
+for pi in y_preds:
+    y_pred += [y_preds[pi].argmax()]
+    y_true += [graph.y[pi]]
+test_acc = evaluator.eval({
+                    'y_true': torch.LongTensor(y_true).unsqueeze(-1),
+                    'y_pred': torch.LongTensor(y_pred).unsqueeze(-1)
+                })['acc']
+print(test_acc)
