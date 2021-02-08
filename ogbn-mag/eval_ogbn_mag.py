@@ -64,7 +64,6 @@ args = parser.parse_args()
 args_print(args)
 
 
-
 def ogbn_sample(seed, samp_nodes):
     np.random.seed(seed)
     ylabel      = torch.LongTensor(graph.y[samp_nodes])
@@ -78,7 +77,10 @@ def ogbn_sample(seed, samp_nodes):
     valid_mask = graph.valid_mask[indxs['paper']]
     test_mask  = graph.test_mask[indxs['paper']]
     ylabel     = graph.y[indxs['paper']]
-    return node_feature, node_type, edge_time, edge_index, edge_type, (train_mask, valid_mask, test_mask), ylabel
+    yindxs     = indxs['paper'][test_mask]
+    return node_feature, node_type, edge_time, edge_index, edge_type, (train_mask, valid_mask, test_mask), ylabel, yindxs
+  
+  
     
 def prepare_data(pool, task_type = 'train', s_idx = 0, n_batch = args.n_batch, batch_size = args.batch_size):
     '''
