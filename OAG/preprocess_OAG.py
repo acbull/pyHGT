@@ -1,13 +1,10 @@
+import argparse
+
 from transformers import *
 
-from data import *
-import gensim
-from gensim.models import Word2Vec
-from tqdm import tqdm
-# from tqdm import tqdm_notebook as tqdm   # Comment this line if using jupyter notebook
+from pyHGT.data import *
 
-
-import argparse
+# from tqdm import tqdm_notebook as tqdm  # Uncomment this line if using jupyter notebook
 
 parser = argparse.ArgumentParser(description='Preprocess OAG (CS/Med/All) Data')
 
@@ -27,278 +24,413 @@ parser.add_argument('--citation_bar', type=int, default=1,
 
 args = parser.parse_args()
 
-
+venue_types = ['conference', 'journal', 'repository', 'patent']
 test_time_bar = 2016
 
+filename = 'PR%s_20190919.tsv' % args.domain
+print(f'Counting paper cites from {filename}...')
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename))
+
 cite_dict = defaultdict(lambda: 0)
-with open(args.input_dir + '/PR%s_20190919.tsv' % args.domain) as fin:
+
+with open(filename) as fin:
     fin.readline()
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/PR%s_20190919.tsv' % args.domain))):
-        l = l[:-1].split('\t')
-        cite_dict[l[1]] += 1
-        
-        
-pfl = defaultdict(lambda: {})
-with open(args.input_dir + '/Papers%s_20190919.tsv' % args.domain) as fin:
+    for line in tqdm(fin, total=line_count):
+        tokens = line.strip().split('\t')
+        paper_id = tokens[1]
+        cite_dict[paper_id] += 1
+
+filename = 'Papers%s_20190919.tsv' % args.domain
+print(f'Reading Paper nodes from {filename}...')
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename))
+
+paper_nodes = defaultdict(lambda: {})
+
+with open(filename) as fin:
     fin.readline()
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/Papers%s_20190919.tsv' % args.domain))):
-        l = l[:-1].split('\t')
-        bound = min(2020 - int(l[1]), 20) * args.citation_bar
-        if cite_dict[l[0]] < bound or l[0] == '' or l[1] == '' or l[2] == '' or l[3] == '' and l[4] == '' or int(l[1]) < 1900:
+    for line in tqdm(fin, total=line_count):
+        tokens = line.strip().split('\t')
+
+        paper_id = tokens[0]
+        time = tokens[1]
+        title = tokens[2]
+        venue_id = tokens[3]
+        lang = tokens[4]
+
+        bound = min(2020 - int(time), 20) * args.citation_bar
+
+        if ((cite_dict[paper_id] < bound) or paper_id == '' or time == '' or title == '') or \
+                (venue_id == '' and lang == '') or \
+                int(time) < 1900:
             continue
-        pi = {'id': l[0], 'title': l[2], 'type': 'paper', 'time': int(l[1])}
-        pfl[l[0]] = pi
-        
-      
+
+        paper_node = {'id': paper_id, 'title': title, 'type': 'paper', 'time': int(time)}
+        paper_nodes[paper_id] = paper_node
+
 if args.cuda != -1:
     device = torch.device("cuda:" + str(args.cuda))
 else:
     device = torch.device("cpu")
-        
+
+filename = 'PAb%s_20190919.tsv' % args.domain
+print(f'Getting paper abstract embeddings. Abstracts are from {filename}...')
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename, 'r'))
+
 tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased')
 model = XLNetModel.from_pretrained('xlnet-base-cased',
-                                    output_hidden_states=True,
-                                    output_attentions=True).to(device)
-        
-               
-with open(args.input_dir + '/PAb%s_20190919.tsv' % args.domain) as fin:
+                                   output_hidden_states=True,
+                                   output_attentions=True).to(device)
+
+with open(filename) as fin:
     fin.readline()
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/PAb%s_20190919.tsv' % args.domain, 'r'))):
+    for line in tqdm(fin, total=line_count):
         try:
-            l = l.split('\t')
-            if l[0] in pfl:
-                input_ids = torch.tensor([tokenizer.encode(pfl[l[0]]['title'])]).to(device)[:, :64]
+            tokens = line.split('\t')
+            paper_id = tokens[0]
+            if paper_id in paper_nodes:
+                paper_node = paper_nodes[paper_id]
+
+                input_ids = torch.tensor([tokenizer.encode(paper_node['title'])]).to(device)[:, :64]
                 if len(input_ids[0]) < 4:
                     continue
                 all_hidden_states, all_attentions = model(input_ids)[-2:]
                 rep = (all_hidden_states[-2][0] * all_attentions[-2][0].mean(dim=0).mean(dim=0).view(-1, 1)).sum(dim=0)
-                pfl[l[0]]['emb'] = rep.tolist()
+
+                paper_node['emb'] = rep.tolist()
         except Exception as e:
             print(e)
-        
-        
-        
+
+filename = 'vfi_vector.tsv'
+print(f'Reading Venue/Filed/Affiliation nodes from {filename}...')
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename))
+
 vfi_ids = {}
-with open(args.input_dir + '/vfi_vector.tsv') as fin:
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/vfi_vector.tsv'))):
-        l = l[:-1].split('\t')
-        vfi_ids[l[0]] = True        
-        
-        
+
+with open(filename) as fin:
+    for line in tqdm(fin, total=line_count):
+        tokens = line.strip().split('\t')
+        node_id = tokens[0]
+        vfi_ids[node_id] = True
+
+filename = 'Papers%s_20190919.tsv' % args.domain
+print(f'Reading Paper-Venue triples from {filename}...')
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename, 'r'))
+
 graph = Graph()
-rem = []
-with open(args.input_dir + '/Papers%s_20190919.tsv' % args.domain) as fin:
+remaining_nodes = []
+
+with open(filename) as fin:
     fin.readline()
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/Papers%s_20190919.tsv' % args.domain, 'r'))):
-        l = l[:-1].split('\t')
-        if l[0] not in pfl or l[4] != 'en' or 'emb' not in pfl[l[0]] or l[3] not in vfi_ids:
+    for line in tqdm(fin, total=line_count):
+        tokens = line.strip().split('\t')
+
+        paper_id = tokens[0]
+        venue_id = tokens[3]
+        lang = tokens[4]
+
+        if (paper_id not in paper_nodes) or (lang != 'en') or \
+                ('emb' not in paper_nodes[paper_id]) or (venue_id not in vfi_ids):
             continue
-        rem += [l[0]]
-        vi = {'id': l[3], 'type': 'venue', 'attr': l[-2]}
-        graph.add_edge(pfl[l[0]], vi, time = int(l[1]), relation_type = 'PV_' + l[-2])
-pfl = {i: pfl[i] for i in rem}
-print(len(pfl))
 
-        
-with open(args.input_dir + '/PR%s_20190919.tsv' % args.domain) as fin:
+        remaining_nodes.append(paper_id)
+        venue_type = tokens[-2]
+        venue_node = {'id': venue_id, 'type': 'venue', 'attr': venue_type}
+        graph.add_edge(paper_nodes[paper_id], venue_node, time=int(tokens[1]), relation_type='PV_' + venue_type)
+
+org_count = len(paper_nodes)
+paper_nodes = {paper_id: paper_nodes[paper_id] for paper_id in remaining_nodes}
+print(f'Removed article count: {(org_count - len(paper_nodes)):,}')
+
+filename = 'PR%s_20190919.tsv' % args.domain
+print(f'Reading Paper-Paper triples from {filename}...')
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename))
+with open(filename) as fin:
     fin.readline()
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/PR%s_20190919.tsv' % args.domain))):
-        l = l[:-1].split('\t')
-        if l[0] in pfl and l[1] in pfl:
-            p1 = pfl[l[0]]
-            p2 = pfl[l[1]]
+    for line in tqdm(fin, total=line_count):
+        tokens = line.strip().split('\t')
+        paper_id1 = tokens[0]
+        paper_id2 = tokens[1]
+
+        if (paper_id1 in paper_nodes) and (paper_id2 in paper_nodes):
+            p1 = paper_nodes[paper_id1]
+            p2 = paper_nodes[paper_id2]
             if p1['time'] >= p2['time']:
-                graph.add_edge(p1, p2, time = p1['time'], relation_type = 'PP_cite')
-        
-        
-        
+                graph.add_edge(p1, p2, time=p1['time'], relation_type='PP_cite')
+
+filename = 'PF%s_20190919.tsv' % args.domain
+print(f'Reading FieldOfStudyIds from {filename}...')
 ffl = {}
-with open(args.input_dir + '/PF%s_20190919.tsv' % args.domain) as fin:
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename))
+with open(filename) as fin:
     fin.readline()
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/PF%s_20190919.tsv' % args.domain))):
-        l = l[:-1].split('\t')
-        if l[0] in pfl and l[1] in vfi_ids:
-            ffl[l[1]] = True        
-        
-        
-        
-        
-with open(args.input_dir + '/FHierarchy_20190919.tsv') as fin:
-    fin.readline()
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/FHierarchy_20190919.tsv'))):
-        l = l[:-1].split('\t')
-        if l[0] in ffl and l[1] in ffl:
-            fi = {'id': l[0], 'type': 'field', 'attr': l[2]}
-            fj = {'id': l[1], 'type': 'field', 'attr': l[3]}
-            graph.add_edge(fi, fj, relation_type = 'FF_in')
-            ffl[l[0]] = fi
-            ffl[l[1]] = fj        
-        
-        
-        
-        
-with open(args.input_dir + '/PF%s_20190919.tsv' % args.domain) as fin:
-    fin.readline()
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/PF%s_20190919.tsv' % args.domain))):
-        l = l[:-1].split('\t')
-        if l[0] in pfl and l[1] in ffl and type(ffl[l[1]]) == dict:
-            pi = pfl[l[0]]
-            fi = ffl[l[1]]
-            graph.add_edge(pi, fi, time = pi['time'], relation_type = 'PF_in_' + fi['attr'])        
-        
-        
-        
-        
-coa = defaultdict(lambda: {})
-with open(args.input_dir + '/PAuAf%s_20190919.tsv' % args.domain) as fin:
-    fin.readline()
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/PAuAf%s_20190919.tsv' % args.domain))):
-        l = l[:-1].split('\t')
-        if l[0] in pfl and l[2] in vfi_ids:
-            pi = pfl[l[0]]
-            ai = {'id': l[1], 'type': 'author'}
-            fi = {'id': l[2], 'type': 'affiliation'}
-            coa[l[0]][int(l[-1])] = ai
-            graph.add_edge(ai, fi, relation_type = 'in')
+    for line in tqdm(fin, total=line_count):
+        tokens = line.strip().split('\t')
 
-for pid in tqdm(coa):
-    pi = pfl[pid]
-    max_seq = max(coa[pid].keys())
-    for seq_i in coa[pid]:
-        ai = coa[pid][seq_i]
+        paper_id = tokens[0]
+        field_id = tokens[1]
+
+        if (paper_id in paper_nodes) and (field_id in vfi_ids):
+            ffl[field_id] = True
+
+filename = 'FHierarchy_20190919.tsv'
+print(f'Reading field hierarchy from {filename}...')
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename))
+with open(filename) as fin:
+    fin.readline()
+    for line in tqdm(fin, total=line_count):
+        tokens = line.strip().split('\t')
+
+        field_id1 = tokens[0]
+        field_id2 = tokens[1]
+        child_level = tokens[2]  # L1/L2/L3/L4/L5
+        parent_level = tokens[3]  # L0/L1/L2/L3/L4
+
+        if (field_id1 in ffl) and (field_id2 in ffl):
+            field_node1 = {'id': field_id1, 'type': 'field', 'attr': child_level}
+            field_node2 = {'id': field_id2, 'type': 'field', 'attr': parent_level}
+
+            graph.add_edge(field_node1, field_node2, relation_type='FF_in')
+
+            ffl[field_id1] = field_node1
+            ffl[field_id2] = field_node2
+
+filename = 'PF%s_20190919.tsv' % args.domain
+print(f'Reading Paper-Field triples from {filename}...')
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename))
+with open(filename) as fin:
+    fin.readline()
+    for line in tqdm(fin, total=line_count):
+        tokens = line.strip().split('\t')
+
+        paper_id = tokens[0]
+        field_id = tokens[1]
+
+        if (paper_id in paper_nodes) and (field_id in ffl) and (type(ffl[field_id]) == dict):
+            paper_node = paper_nodes[paper_id]
+            field_node = ffl[field_id]
+            graph.add_edge(paper_node, field_node, time=paper_node['time'],
+                           relation_type='PF_in_' + field_node['attr'])
+
+filename = 'PAuAf%s_20190919.tsv' % args.domain
+print(f'Reading Author-Affiliation triples from {filename}...')
+paper_authors = defaultdict(lambda: {})
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename))
+with open(filename) as fin:
+    fin.readline()
+    for line in tqdm(fin, total=line_count):
+        tokens = line.strip().split('\t')
+
+        paper_id = tokens[0]
+        author_id = tokens[1]
+        affiliation_id = tokens[2]
+
+        if (paper_id in paper_nodes) and (affiliation_id in vfi_ids):
+            paper_node = paper_nodes[paper_id]
+            author_node = {'id': author_id, 'type': 'author'}
+            affiliation_node = {'id': affiliation_id, 'type': 'affiliation'}
+
+            position_in_author_list = int(tokens[-1])
+            paper_authors[paper_id][position_in_author_list] = author_node
+            graph.add_edge(author_node, affiliation_node, relation_type='in')
+
+print('Adding Author-Paper triples...')
+for paper_id in tqdm(paper_authors):
+    paper_node = paper_nodes[paper_id]
+    max_seq = max(paper_authors[paper_id].keys())
+
+    for seq_i in paper_authors[paper_id]:
+        author_node = paper_authors[paper_id][seq_i]
         if seq_i == 1:
-            graph.add_edge(ai, pi, time = pi['time'], relation_type = 'AP_write_first')
+            graph.add_edge(author_node, paper_node, time=paper_node['time'], relation_type='AP_write_first')
         elif seq_i == max_seq:
-            graph.add_edge(ai, pi, time = pi['time'], relation_type = 'AP_write_last')
+            graph.add_edge(author_node, paper_node, time=paper_node['time'], relation_type='AP_write_last')
         else:
-            graph.add_edge(ai, pi, time = pi['time'], relation_type = 'AP_write_other')
-        
-        
-        
-        
-with open(args.input_dir + '/vfi_vector.tsv') as fin:
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/vfi_vector.tsv'))):
-        l = l[:-1].split('\t')
-        ser = l[0]
-        for idx in ['venue', 'field', 'affiliation']:
-            if ser in graph.node_forward[idx]:
-                graph.node_bacward[idx][graph.node_forward[idx][ser]]['node_emb'] = np.array(l[1].split(' '))        
-        
-        
+            graph.add_edge(author_node, paper_node, time=paper_node['time'], relation_type='AP_write_other')
 
-        
-with open(args.input_dir + '/SeqName%s_20190919.tsv' % args.domain) as fin:
-    for l in tqdm(fin, total = sum(1 for line in open(args.input_dir + '/SeqName%s_20190919.tsv' % args.domain))):
-        l = l[:-1].split('\t')
-        key = l[2]
-        if key in ['conference', 'journal', 'repository', 'patent']:
-            key = 'venue'
-        if key == 'fos':
-            key = 'field'
-        if l[0] in graph.node_forward[key]:
-            s = graph.node_bacward[key][graph.node_forward[key][l[0]]]
-            s['name'] = l[1]     
-    
+filename = 'vfi_vector.tsv'
+print(f'Reading embeddings of Venue/Field/Affiliation nodes from {filename}...')
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename))
+with open(filename) as fin:
+    for line in tqdm(fin, total=line_count):
+        tokens = line.strip().split('\t')
+
+        node_id = tokens[0]
+        node_feature_vector = tokens[1]
+
+        for node_type in ['venue', 'field', 'affiliation']:
+            if node_id in graph.node_forward[node_type]:
+                node_idx = graph.node_forward[node_type][node_id]
+                node = graph.node_backward[node_type][node_idx]
+                node['node_emb'] = np.array(node_feature_vector.split(' '))
+
+filename = 'SeqName%s_20190919.tsv' % args.domain
+print(f'Reading node names from {filename}...')
+filename = f'{args.input_dir}/{filename}'
+line_count = sum(1 for line in open(filename))
+with open(filename) as fin:
+    for line in tqdm(fin, total=line_count):
+        tokens = line.strip().split('\t')
+
+        node_id = tokens[0]
+        node_type = tokens[2]
+
+        if node_type in venue_types:
+            node_type = 'venue'
+        if node_type == 'fos':
+            node_type = 'field'
+        if node_id in graph.node_forward[node_type]:
+            node_idx = graph.node_forward[node_type][node_id]
+            node = graph.node_backward[node_type][node_idx]
+            node['name'] = tokens[1]
+
 '''
     Calculate the total citation information as node attributes.
 '''
-    
-for idx, pi in enumerate(graph.node_bacward['paper']):
-    pi['citation'] = len(graph.edge_list['paper']['paper']['PP_cite'][idx])
-for idx, ai in enumerate(graph.node_bacward['author']):
+print('Calculate the total citation information as node attributes...')
+for paper_idx, paper_node in enumerate(graph.node_backward['paper']):
+    paper_node['citation'] = len(graph.edge_list['paper']['paper']['PP_cite'][paper_idx])
+
+for author_idx, author_node in enumerate(graph.node_backward['author']):
     citation = 0
     for rel in graph.edge_list['author']['paper'].keys():
-        for pid in graph.edge_list['author']['paper'][rel][idx]:
-            citation += graph.node_bacward['paper'][pid]['citation']
-    ai['citation'] = citation
-for idx, fi in enumerate(graph.node_bacward['affiliation']):
+        for paper_idx in graph.edge_list['author']['paper'][rel][author_idx]:
+            paper_node = graph.node_backward['paper'][paper_idx]
+            citation += paper_node['citation']
+
+    author_node['citation'] = citation
+
+for affiliation_idx, affiliation_node in enumerate(graph.node_backward['affiliation']):
     citation = 0
-    for aid in graph.edge_list['affiliation']['author']['in'][idx]:
-        citation += graph.node_bacward['author'][aid]['citation']
-    fi['citation'] = citation
-for idx, vi in enumerate(graph.node_bacward['venue']):
+    for author_idx in graph.edge_list['affiliation']['author']['in'][affiliation_idx]:
+        author_node = graph.node_backward['author'][author_idx]
+        citation += author_node['citation']
+
+    affiliation_node['citation'] = citation
+
+for venue_idx, venue_node in enumerate(graph.node_backward['venue']):
     citation = 0
     for rel in graph.edge_list['venue']['paper'].keys():
-        for pid in graph.edge_list['venue']['paper'][rel][idx]:
-            citation += graph.node_bacward['paper'][pid]['citation']
-    vi['citation'] = citation
-for idx, fi in enumerate(graph.node_bacward['field']):
+        for paper_idx in graph.edge_list['venue']['paper'][rel][venue_idx]:
+            paper_node = graph.node_backward['paper'][paper_idx]
+            citation += paper_node['citation']
+
+    venue_node['citation'] = citation
+
+for field_idx, field_node in enumerate(graph.node_backward['field']):
     citation = 0
     for rel in graph.edge_list['field']['paper'].keys():
-        for pid in graph.edge_list['field']['paper'][rel][idx]:
-            citation += graph.node_bacward['paper'][pid]['citation']
-    fi['citation'] = citation
-    
-    
-    
+        for paper_idx in graph.edge_list['field']['paper'][rel][field_idx]:
+            paper_node = graph.node_backward['paper'][paper_idx]
+            citation += paper_node['citation']
+
+    field_node['citation'] = citation
+
+print('Done.')
 
 '''
     Since only paper have w2v embedding, we simply propagate its
     feature to other nodes by averaging neighborhoods.
-    Then, we construct the Dataframe for each node type.
+    Then, we construct the DataFrame for each node type.
 '''
-d = pd.DataFrame(graph.node_bacward['paper'])
-graph.node_feature = {'paper': d}
-cv = np.array(list(d['emb']))
-for _type in graph.node_bacward:
-    if _type not in ['paper', 'affiliation']:
-        d = pd.DataFrame(graph.node_bacward[_type])
-        i = []
-        for _rel in graph.edge_list[_type]['paper']:
-            for t in graph.edge_list[_type]['paper'][_rel]:
-                for s in graph.edge_list[_type]['paper'][_rel][t]:
-                    if graph.edge_list[_type]['paper'][_rel][t][s] <= test_time_bar:
-                        i += [[t, s]]
-        if len(i) == 0:
-            continue
-        i = np.array(i).T
-        v = np.ones(i.shape[1])
-        m = normalize(sp.coo_matrix((v, i), \
-            shape=(len(graph.node_bacward[_type]), len(graph.node_bacward['paper']))))
-        out = m.dot(cv)
-        d['emb'] = list(out)
-        graph.node_feature[_type] = d
+print('Calculating embeddings for non-Paper nodes...')
+df = pd.DataFrame(graph.node_backward['paper'])
+graph.node_feature = {'paper': df}
+paper_embeddings = np.array(list(df['emb']))
+
+for _type in graph.node_backward:
+    if _type in ['paper', 'affiliation']:
+        continue
+
+    df = pd.DataFrame(graph.node_backward[_type])
+    node_pairs = []
+    for _rel in graph.edge_list[_type]['paper']:
+        for target_idx in graph.edge_list[_type]['paper'][_rel]:
+            for source_idx in graph.edge_list[_type]['paper'][_rel][target_idx]:
+                if graph.edge_list[_type]['paper'][_rel][target_idx][source_idx] <= test_time_bar:
+                    node_pairs += [[target_idx, source_idx]]
+    if len(node_pairs) == 0:
+        continue
+
+    node_pairs = np.array(node_pairs).T
+    edge_count = node_pairs.shape[1]
+    v = np.ones(edge_count)
+    m = normalize(sp.coo_matrix((v, node_pairs),
+                                shape=(len(graph.node_backward[_type]), len(graph.node_backward['paper']))))
+
+    out = m.dot(paper_embeddings)
+    df['emb'] = list(out)
+    graph.node_feature[_type] = df
+
 '''
     Affiliation is not directly linked with Paper, so we average the author embedding.
 '''
-cv = np.array(list(graph.node_feature['author']['emb']))
-d = pd.DataFrame(graph.node_bacward['affiliation'])
-i = []
+author_embeddings = np.array(list(graph.node_feature['author']['emb']))
+df = pd.DataFrame(graph.node_backward['affiliation'])
+node_pairs = []
 for _rel in graph.edge_list['affiliation']['author']:
-    for j in graph.edge_list['affiliation']['author'][_rel]:
-        for t in graph.edge_list['affiliation']['author'][_rel][j]:
-            i += [[j, t]]
-i = np.array(i).T
-v = np.ones(i.shape[1])
-m = normalize(sp.coo_matrix((v, i), \
-    shape=(len(graph.node_bacward['affiliation']), len(graph.node_bacward['author']))))
-out = m.dot(cv)
-d['emb'] = list(out)
-graph.node_feature['affiliation'] = d           
-      
-    
-edg = {}
-for k1 in graph.edge_list:
-    if k1 not in edg:
-        edg[k1] = {}
-    for k2 in graph.edge_list[k1]:
-        if k2 not in edg[k1]:
-            edg[k1][k2] = {}
-        for k3 in graph.edge_list[k1][k2]:
-            if k3 not in edg[k1][k2]:
-                edg[k1][k2][k3] = {}
-            for e1 in graph.edge_list[k1][k2][k3]:
-                if len(graph.edge_list[k1][k2][k3][e1]) == 0:
-                    continue
-                edg[k1][k2][k3][e1] = {}
-                for e2 in graph.edge_list[k1][k2][k3][e1]:
-                    edg[k1][k2][k3][e1][e2] = graph.edge_list[k1][k2][k3][e1][e2]
-            print(k1, k2, k3, len(edg[k1][k2][k3]))
-graph.edge_list = edg
+    for target_idx in graph.edge_list['affiliation']['author'][_rel]:
+        for source_idx in graph.edge_list['affiliation']['author'][_rel][target_idx]:
+            node_pairs += [[target_idx, source_idx]]
 
-        
-del graph.node_bacward        
-dill.dump(graph, open(args.output_dir + '/graph%s.pk' % args.domain, 'wb'))       
-        
-        
-        
+node_pairs = np.array(node_pairs).T
+edge_count = node_pairs.shape[1]
+v = np.ones(edge_count)
+m = normalize(sp.coo_matrix((v, node_pairs),
+                            shape=(len(graph.node_backward['affiliation']), len(graph.node_backward['author']))))
+out = m.dot(author_embeddings)
+df['emb'] = list(out)
+graph.node_feature['affiliation'] = df
+
+print('Done.')
+print()
+print('Cleaning edge list...')
+clean_edge_list = {}
+# target_type
+for k1 in graph.edge_list:
+    if k1 not in clean_edge_list:
+        clean_edge_list[k1] = {}
+    # source_type
+    for k2 in graph.edge_list[k1]:
+        if k2 not in clean_edge_list[k1]:
+            clean_edge_list[k1][k2] = {}
+        # relation_type
+        for k3 in graph.edge_list[k1][k2]:
+            if k3 not in clean_edge_list[k1][k2]:
+                clean_edge_list[k1][k2][k3] = {}
+
+            triple_count = 0
+            # target_idx
+            for e1 in graph.edge_list[k1][k2][k3]:
+                edge_count = len(graph.edge_list[k1][k2][k3][e1])
+                triple_count += edge_count
+                if edge_count == 0:
+                    continue
+                clean_edge_list[k1][k2][k3][e1] = {}
+                # source_idx
+                for e2 in graph.edge_list[k1][k2][k3][e1]:
+                    clean_edge_list[k1][k2][k3][e1][e2] = graph.edge_list[k1][k2][k3][e1][e2]
+            print(k1, k2, k3, triple_count)
+
+graph.edge_list = clean_edge_list
+print()
+print('Number of nodes:')
+for node_type in graph.node_forward:
+    print(f'{node_type}: {len(graph.node_forward[node_type]):,}')
+print()
+
+del graph.node_backward
+
+print('Writting graph in file:')
+dill.dump(graph, open(args.output_dir + '/graph%s.pk' % args.domain, 'wb'))
+print('Done.')
