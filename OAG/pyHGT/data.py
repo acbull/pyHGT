@@ -20,15 +20,15 @@ class Graph():
     def __init__(self):
         super(Graph, self).__init__()
         '''
-            node_forward and bacward are only used when building the data. 
+            node_forward and node_backward are only used when building the data. 
             Afterwards will be transformed into node_feature by DataFrame
             
             node_forward: name -> node_id
-            node_bacward: node_id -> feature_dict
+            node_backward: node_id -> feature_dict
             node_feature: a DataFrame containing all features
         '''
         self.node_forward = defaultdict(lambda: {})
-        self.node_bacward = defaultdict(lambda: [])
+        self.node_backward = defaultdict(lambda: [])
         self.node_feature = defaultdict(lambda: [])
 
         '''
@@ -46,7 +46,7 @@ class Graph():
     def add_node(self, node):
         nfl = self.node_forward[node['type']]
         if node['id'] not in nfl:
-            self.node_bacward[node['type']] += [node]
+            self.node_backward[node['type']] += [node]
             ser = len(nfl)
             nfl[node['id']] = ser
             return ser
@@ -64,7 +64,7 @@ class Graph():
         self.times[time] = True
         
     def update_node(self, node):
-        nbl = self.node_bacward[node['type']]
+        nbl = self.node_backward[node['type']]
         ser = self.add_node(node)
         for k in node:
             if k not in nbl[ser]:
