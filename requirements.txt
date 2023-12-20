@@ -11,4 +11,4 @@ torchvision==0.4.1
 tqdm==4.31.1
 seaborn==0.9.0
 matplotlib==3.0.3
-transformers==4.30.0
+transformers==4.36.0
